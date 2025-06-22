@@ -1,21 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Bernard Assistant</title>
+    <title>Talk to Bernard</title>
 </head>
 <body>
-    <h2>Talk to Bernard</h2>
-    <form method="post">
-        <textarea name="text" rows="5" cols="40" placeholder="Type your message to Bernard..."></textarea><br>
+    <h1>Talk to Bernard</h1>
+    <form method="POST">
+        <textarea name="text" placeholder="Type your message to Bernard..." rows="5" cols="40"></textarea><br>
         <button type="submit">Generate Voice</button>
     </form>
+
     {% if audio_file %}
-        <h3>Bernard's Response:</h3>
-        <audio controls autoplay>
-    <source src="{{ audio_file }}" type="audio/mpeg">
-    Your browser does not support the audio element.
-</audio>
+        <h2>Bernard Says:</h2>
+        <audio controls>
+            <source src="{{ url_for('static', filename=audio_file.split('static/')[1]) }}" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
     {% endif %}
 </body>
 </html>
