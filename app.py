@@ -35,13 +35,20 @@ def index():
         response = requests.post(url, headers=headers, json=payload)
 
         if response.status_code == 200:
-            with open(output_path, "wb") as f:
-                f.write(response.content)
-            audio_file = output_path
-        else:
-            print("❌ ElevenLabs API Error:")
-            print(f"Status Code: {response.status_code}")
-            print(f"Response: {response.text}")
+    if response.content and len(response.content) > 1000:
+        with open(output_path, "wb") as f:
+            f.write(response.content)
+        print(f"✅ Saved audio file: {output_path}")
+        audio_file = output_path
+    else:
+        print("⚠️ Response received but no usable audio data.")
+        print(f"Headers: {response.headers}")
+        print(f"Raw content size: {len(response.content)} bytes")
+else:
+    print("❌ ElevenLabs API Error:")
+    print(f"Status Code: {response.status_code}")
+    print(f"Response: {response.text}")
+
 
     return render_template("index.html", audio_file=audio_file)
 
