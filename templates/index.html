@@ -1,101 +1,37 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Talk to Bernard the Elf</title>
-  <style>
-    body {
-      background: url('https://www.transparenttextures.com/patterns/paper-fibers.png'), #f3e6cc;
-      font-family: 'Georgia', serif;
-      text-align: center;
-      padding: 2em;
-      color: #2e2e1f;
-    }
-    .holly {
-      position: absolute;
-      width: 60px;
-    }
-    .holly.tl { top: 10px; left: 10px; }
-    .holly.tr { top: 10px; right: 10px; }
-    input[type="text"] {
-      width: 80%;
-      padding: 0.7em;
-      font-size: 1.1em;
-      border: 2px solid #2e5d34;
-      border-radius: 8px;
-      margin-bottom: 1em;
-    }
-    #speakBtn {
-      background-color: #b22b2b;
-      color: #fff8e1;
-      font-size: 1.4em;
-      padding: 0.6em 1.5em;
-      border: none;
-      border-radius: 40px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 1em auto;
-    }
-    #speakBtn img {
-      height: 40px;
-      margin-right: 0.5em;
-    }
-    audio {
-      width: 80%;
-      margin-top: 1em;
-    }
-  </style>
+  <title>Bernard Voice Test</title>
 </head>
-<body>
-  <img src="https://i.imgur.com/0L5oQzR.png" class="holly tl" alt="holly">
-  <img src="https://i.imgur.com/0L5oQzR.png" class="holly tr" alt="holly">
+<body style="font-family: sans-serif; max-width: 600px; margin: 40px auto; text-align: center;">
+  <h2>🎙️ Bernard Voice Test</h2>
+  <p>Type a message below and hear Bernard speak!</p>
 
-  <h1>Talk to Bernard the Elf</h1>
-  <input type="text" id="textInput" placeholder="Type your message here...">
-  <button id="speakBtn">
-    <img src="https://i.imgur.com/Bq5JL3O.png" alt="Bernard">
-    Speak
-  </button>
+  <textarea id="textInput" rows="4" style="width: 100%; font-size: 16px;"></textarea><br><br>
+  <button onclick="sendText()" style="padding: 10px 20px; font-size: 16px;">Speak</button><br><br>
 
-  <h2>Bernard says:</h2>
-  <audio id="bernardAudio" controls></audio>
+  <audio id="audioPlayer" controls style="width: 100%; margin-top: 20px;"></audio>
 
   <script>
-    const speakBtn = document.getElementById('speakBtn');
-    const textInput = document.getElementById('textInput');
-    const audio = document.getElementById('bernardAudio');
+    async function sendText() {
+      const text = document.getElementById("textInput").value;
+      const response = await fetch("https://bernard-voice.onrender.com/speak", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ text })
+      });
 
-    speakBtn.addEventListener('click', async () => {
-      const text = textInput.value.trim();
-      if (!text) return;
-
-      speakBtn.disabled = true;
-      speakBtn.textContent = 'Speaking...';
-
-      try {
-        const response = await fetch('/speak', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text })
-        });
-
-        if (!response.ok) throw new Error('Failed to fetch audio');
-
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        audio.src = url;
-        audio.play();
-      } catch (err) {
-        alert('Bernard had trouble speaking!');
-        console.error(err);
-      } finally {
-        speakBtn.disabled = false;
-        speakBtn.textContent = 'Speak';
+      if (!response.ok) {
+        alert("Error: " + response.statusText);
+        return;
       }
-    });
+
+      const blob = await response.blob();
+      const audioUrl = URL.createObjectURL(blob);
+      document.getElementById("audioPlayer").src = audioUrl;
+    }
   </script>
 </body>
 </html>
