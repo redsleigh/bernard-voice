@@ -8,6 +8,10 @@ app = Flask(__name__)
 ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
 VOICE_ID = os.environ.get("VOICE_ID")
 
+@app.route("/", methods=["GET"])
+def index():
+    return "Bernard Voice API is running!"
+
 @app.route("/speak", methods=["POST"])
 def speak():
     data = request.get_json()
