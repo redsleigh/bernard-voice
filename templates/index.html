@@ -1,22 +1,101 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Bernard the Elf</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Talk to Bernard the Elf</title>
+  <style>
+    body {
+      background: url('https://www.transparenttextures.com/patterns/paper-fibers.png'), #f3e6cc;
+      font-family: 'Georgia', serif;
+      text-align: center;
+      padding: 2em;
+      color: #2e2e1f;
+    }
+    .holly {
+      position: absolute;
+      width: 60px;
+    }
+    .holly.tl { top: 10px; left: 10px; }
+    .holly.tr { top: 10px; right: 10px; }
+    input[type="text"] {
+      width: 80%;
+      padding: 0.7em;
+      font-size: 1.1em;
+      border: 2px solid #2e5d34;
+      border-radius: 8px;
+      margin-bottom: 1em;
+    }
+    #speakBtn {
+      background-color: #b22b2b;
+      color: #fff8e1;
+      font-size: 1.4em;
+      padding: 0.6em 1.5em;
+      border: none;
+      border-radius: 40px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 1em auto;
+    }
+    #speakBtn img {
+      height: 40px;
+      margin-right: 0.5em;
+    }
+    audio {
+      width: 80%;
+      margin-top: 1em;
+    }
+  </style>
 </head>
 <body>
-    <h1>Talk to Bernard the Elf</h1>
-    <form method="post">
-        <label for="user_input">What should Bernard say?</label><br>
-        <input type="text" id="user_input" name="user_input" required>
-        <button type="submit">Speak</button>
-    </form>
+  <img src="https://i.imgur.com/0L5oQzR.png" class="holly tl" alt="holly">
+  <img src="https://i.imgur.com/0L5oQzR.png" class="holly tr" alt="holly">
 
-    {% if audio_file %}
-        <h2>Bernard says:</h2>
-        <audio controls autoplay>
-            <source src="{{ url_for('static', filename=audio_file) }}" type="audio/mpeg">
-            Your browser does not support the audio element.
-        </audio>
-    {% endif %}
+  <h1>Talk to Bernard the Elf</h1>
+  <input type="text" id="textInput" placeholder="Type your message here...">
+  <button id="speakBtn">
+    <img src="https://i.imgur.com/Bq5JL3O.png" alt="Bernard">
+    Speak
+  </button>
+
+  <h2>Bernard says:</h2>
+  <audio id="bernardAudio" controls></audio>
+
+  <script>
+    const speakBtn = document.getElementById('speakBtn');
+    const textInput = document.getElementById('textInput');
+    const audio = document.getElementById('bernardAudio');
+
+    speakBtn.addEventListener('click', async () => {
+      const text = textInput.value.trim();
+      if (!text) return;
+
+      speakBtn.disabled = true;
+      speakBtn.textContent = 'Speaking...';
+
+      try {
+        const response = await fetch('/speak', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch audio');
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        audio.src = url;
+        audio.play();
+      } catch (err) {
+        alert('Bernard had trouble speaking!');
+        console.error(err);
+      } finally {
+        speakBtn.disabled = false;
+        speakBtn.textContent = 'Speak';
+      }
+    });
+  </script>
 </body>
 </html>
