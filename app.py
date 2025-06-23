@@ -1,7 +1,7 @@
 import os
 import requests
 import tempfile
-from flask import Flask, request, send_file
+from flask import Flask, request, send_file, render_template
 
 app = Flask(__name__)
 
@@ -10,7 +10,7 @@ VOICE_ID = os.environ.get("VOICE_ID")
 
 @app.route("/")
 def home():
-    return send_file("index.html")  # Serves your HTML interface
+    return render_template("index.html")  # Correctly loads from templates folder
 
 @app.route("/speak", methods=["POST"])
 def speak():
@@ -43,3 +43,4 @@ def speak():
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+

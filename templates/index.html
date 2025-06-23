@@ -1,21 +1,25 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Bernard Voice Test</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bernard Voice API</title>
 </head>
-<body style="font-family: sans-serif; max-width: 600px; margin: 40px auto; text-align: center;">
-  <h2>🎙️ Bernard Voice Test</h2>
-  <p>Type a message below and hear Bernard speak!</p>
-
-  <textarea id="textInput" rows="4" style="width: 100%; font-size: 16px;"></textarea><br><br>
-  <button onclick="sendText()" style="padding: 10px 20px; font-size: 16px;">Speak</button><br><br>
-
-  <audio id="audioPlayer" controls style="width: 100%; margin-top: 20px;"></audio>
+<body>
+  <h1>🎙️ Bernard Voice Assistant</h1>
+  <p>Enter something for Bernard to say:</p>
+  <form id="speakForm">
+    <textarea id="textInput" rows="4" cols="50" placeholder="Type here..."></textarea><br>
+    <button type="submit">Speak</button>
+  </form>
+  <audio id="audioPlayer" controls style="display:none;"></audio>
 
   <script>
-    async function sendText() {
+    document.getElementById("speakForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
       const text = document.getElementById("textInput").value;
-      const response = await fetch("https://bernard-voice.onrender.com/speak", {
+
+      const response = await fetch("/speak", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -23,15 +27,17 @@
         body: JSON.stringify({ text })
       });
 
-      if (!response.ok) {
-        alert("Error: " + response.statusText);
-        return;
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const audioPlayer = document.getElementById("audioPlayer");
+        audioPlayer.src = url;
+        audioPlayer.style.display = "block";
+        audioPlayer.play();
+      } else {
+        alert("Failed to generate speech.");
       }
-
-      const blob = await response.blob();
-      const audioUrl = URL.createObjectURL(blob);
-      document.getElementById("audioPlayer").src = audioUrl;
-    }
+    });
   </script>
 </body>
 </html>
