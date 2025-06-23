@@ -1,56 +1,51 @@
-from flask import Flask, render_template, request
+import os
+from flask import Flask, render_template, request, send_from_directory
 import requests
 import uuid
-import os
 
 app = Flask(__name__)
-os.makedirs("static", exist_ok=True)
-
-ELEVEN_LABS_API_KEY = "sk_00ef76630743f0baa0c95da661f8440389e8cbb237d72ff1"
-VOICE_ID = "VGgLBmB1JdJmfphy8BsZ"
 
 @app.route("/", methods=["GET", "POST"])
 def index():
     audio_file = None
-
     if request.method == "POST":
-        text = request.form["text"]
-        output_path = f"static/bernard_{uuid.uuid4().hex[:8]}.mp3"
+        user_text = request.form.get("user_input")
+        if user_text:
+            voice_id = os.environ.get("VOICE_ID")
+            elevenlabs_api_key = os.environ.get("ELEVENLABS_API_KEY")
+            if not voice_id or not elevenlabs_api_key:
+                return "Missing environment variables for voice or API key."
 
-        headers = {
-            "xi-api-key": ELEVEN_LABS_API_KEY,
-            "Content-Type": "application/json"
-        }
-
-        payload = {
-            "text": text,
-            "model_id": "eleven_monolingual_v1",
-            "voice_settings": {
-                "stability": 0.6,
-                "similarity_boost": 0.7
+            url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+            headers = {
+                "xi-api-key": elevenlabs_api_key,
+                "Content-Type": "application/json"
             }
-        }
+            data = {
+                "text": user_text,
+                "model_id": "eleven_monolingual_v1",
+                "voice_settings": {
+                    "stability": 0.5,
+                    "similarity_boost": 0.75
+                }
+            }
 
-        url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
-        response = requests.post(url, headers=headers, json=payload)
+            response = requests.post(url, headers=headers, json=data)
 
-        if response.status_code == 200:
-    if response.content and len(response.content) > 1000:
-        with open(output_path, "wb") as f:
-            f.write(response.content)
-        print(f"✅ Saved audio file: {output_path}")
-        audio_file = output_path
-    else:
-        print("⚠️ Response received but no usable audio data.")
-        print(f"Headers: {response.headers}")
-        print(f"Raw content size: {len(response.content)} bytes")
-else:
-    print("❌ ElevenLabs API Error:")
-    print(f"Status Code: {response.status_code}")
-    print(f"Response: {response.text}")
-
+            if response.status_code == 200:
+                filename = f"{uuid.uuid4().hex}.mp3"
+                filepath = os.path.join("static", filename)
+                with open(filepath, "wb") as f:
+                    f.write(response.content)
+                audio_file = filename
+            else:
+                return f"API request failed with status {response.status_code}: {response.text}"
 
     return render_template("index.html", audio_file=audio_file)
 
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    return send_from_directory('static', filename)
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
