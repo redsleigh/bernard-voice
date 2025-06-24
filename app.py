@@ -1,70 +1,92 @@
-from flask import Flask, request, send_file
-import requests
-import tempfile
+from flask import Flask, request, jsonify, render_template
 import os
+import openai
+import requests
 
 app = Flask(__name__)
 
-# Your ElevenLabs API key
-ELEVENLABS_API_KEY = "your_api_key_here"
+# Set your OpenAI and ElevenLabs API keys here
+openai.api_key = os.getenv("OPENAI_API_KEY")
+ELEVEN_API_KEY = os.getenv("ELEVEN_API_KEY")
 
-# Voice ID mappings
+# Voice IDs
 VOICE_IDS = {
     "bernard": "VCgLBmBjldJmfphyB8sZ",
     "pepper": "W4crgEyhEtLRIj1Y3LnP",
     "snowflake": "uHiItyLY8A5jJv9AKoH9"
 }
 
-DEFAULT_VOICE_ID = VOICE_IDS["bernard"]
+def identify_speaker(prompt):
+    prompt_lower = prompt.lower()
+    if "hey pepper" in prompt_lower:
+        return "pepper"
+    elif "hey snowflake" in prompt_lower:
+        return "snowflake"
+    else:
+        return "bernard"
 
-def get_voice_id_from_text(text):
-    lowered = text.lower()
-    if "pepper" in lowered:
-        return VOICE_IDS["pepper"]
-    elif "snowflake" in lowered:
-        return VOICE_IDS["snowflake"]
-    elif "bernard" in lowered:
-        return VOICE_IDS["bernard"]
-    return DEFAULT_VOICE_ID
+def generate_response(prompt, speaker):
+    if speaker == "pepper":
+        persona = "You are Pepper, a cheerful young female elf with a warm, friendly tone, a gentle North Pole accent, and a hint of holiday sparkle. You’re helpful, upbeat, and always excited to assist Santa."
+    elif speaker == "snowflake":
+        persona = "You are Snowflake, a high-energy child elf with a bright, playful voice, a touch of North Pole mischief, and endless excitement. You’re silly and fast-paced with lots of energy."
+    else:
+        persona = "You are Bernard, Santa's head elf. You’re kind, wise, and helpful. You always speak with warm North Pole charm and you help organize Santa’s operations."
 
-@app.route("/speak", methods=["POST"])
-def speak():
-    data = request.json
-    if not data or "text" not in data:
-        return {"error": "Missing 'text' in request"}, 400
+    messages = [
+        {"role": "system", "content": persona},
+        {"role": "user", "content": prompt}
+    ]
 
-    text = data["text"]
-    voice_id = get_voice_id_from_text(text)
+    completion = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=messages
+    )
 
+    return completion.choices[0].message['content']
+
+def synthesize_voice(text, voice_id):
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
     headers = {
-        "xi-api-key": ELEVENLABS_API_KEY,
+        "xi-api-key": ELEVEN_API_KEY,
         "Content-Type": "application/json"
     }
-
     payload = {
         "text": text,
         "model_id": "eleven_monolingual_v1",
         "voice_settings": {
-            "stability": 0.65,
-            "similarity_boost": 0.75
+            "stability": 0.4,
+            "similarity_boost": 0.8
         }
     }
 
-    tts_url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream"
+    response = requests.post(url, json=payload, headers=headers)
+    if response.ok:
+        with open("static/response.mp3", "wb") as f:
+            f.write(response.content)
+        return True
+    return False
 
-    response = requests.post(tts_url, headers=headers, json=payload, stream=True)
+@app.route("/", methods=["GET"])
+def home():
+    return render_template("index.html")
 
-    if response.status_code != 200:
-        return {"error": f"Text-to-speech failed: {response.text}"}, 500
+@app.route("/chat", methods=["POST"])
+def chat():
+    data = request.get_json()
+    prompt = data.get("prompt", "")
 
-    # Save the streamed audio to a temporary file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as f:
-        for chunk in response.iter_content(chunk_size=1024):
-            if chunk:
-                f.write(chunk)
-        temp_file_path = f.name
+    speaker = identify_speaker(prompt)
+    response = generate_response(prompt, speaker)
+    voice_id = VOICE_IDS.get(speaker)
 
-    return send_file(temp_file_path, mimetype="audio/mpeg")
+    success = synthesize_voice(response, voice_id)
+    if not success:
+        return jsonify({"error": "Voice synthesis failed"}), 500
 
+    return jsonify({"response": response, "audio_url": "/static/response.mp3"})
+
+# === Required for Render ===
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
