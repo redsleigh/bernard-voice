@@ -1,101 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
   <title>Bernard Voice Assistant</title>
   <style>
     body {
-      background-color: #8B0000;
+      background: repeating-linear-gradient(
+        45deg,
+        rgba(170, 0, 0, 0.5),
+        rgba(170, 0, 0, 0.5) 10px,
+        rgba(153, 0, 0, 0.5) 10px,
+        rgba(153, 0, 0, 0.5) 20px
+      );
+      font-family: 'Georgia', serif;
       color: gold;
-      font-family: "Georgia", serif;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px);
+      text-align: center;
+      padding-top: 100px;
     }
 
     .container {
-      background: rgba(0, 0, 0, 0.3);
-      padding: 2rem;
+      background-color: rgba(60, 0, 0, 0.7);
+      border: 2px solid gold;
       border-radius: 20px;
-      text-align: center;
-      box-shadow: 0 0 15px gold;
-      max-width: 500px;
-      width: 90%;
+      padding: 40px;
+      width: 60%;
+      margin: auto;
+      box-shadow: 0 0 25px 5px gold;
     }
 
     h1 {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-    }
-
-    label {
-      font-size: 1.2rem;
+      font-size: 2.5em;
+      margin-bottom: 10px;
     }
 
     textarea {
-      width: 100%;
+      width: 90%;
       height: 100px;
-      margin-top: 10px;
+      margin-top: 20px;
+      font-size: 1.1em;
       padding: 10px;
       border-radius: 10px;
-      border: none;
-      font-size: 1rem;
-      resize: none;
+      border: 2px solid #ccc;
     }
 
     button {
-      margin-top: 15px;
-      padding: 10px 20px;
+      margin-top: 20px;
+      padding: 12px 30px;
+      font-size: 1.2em;
       background-color: gold;
-      color: #8B0000;
-      font-weight: bold;
+      color: maroon;
       border: none;
-      border-radius: 10px;
+      border-radius: 8px;
       cursor: pointer;
+      font-weight: bold;
     }
 
     button:hover {
-      background-color: #ffd700;
+      background-color: darkorange;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🎄 Bernard Voice Assistant 🎙️</h1>
-    <label for="text">Enter something for Bernard to say:</label><br/>
-    <textarea id="text" placeholder="Type your holiday message here..."></textarea><br/>
-    <button onclick="speak()">Speak</button>
-    <audio id="audio" controls style="display:none;"></audio>
+    <p>Enter something for Bernard to say:</p>
+    <textarea id="textInput" placeholder="Type your holiday message here..."></textarea><br>
+    <button onclick="sendText()">Speak</button>
+    <audio id="audioPlayer" style="margin-top: 20px;" controls hidden></audio>
   </div>
 
   <script>
-    function speak() {
-      const text = document.getElementById("text").value;
-      fetch("/speak", {
+    async function sendText() {
+      const text = document.getElementById("textInput").value;
+      if (!text.trim()) return;
+
+      const response = await fetch("/speak", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ text: text })
-      })
-      .then(response => {
-        if (!response.ok) throw new Error("Speech failed");
-        return response.blob();
-      })
-      .then(blob => {
-        const audio = document.getElementById("audio");
-        audio.src = URL.createObjectURL(blob);
-        audio.style.display = "block";
-        audio.play(); // Auto playback
-      })
-      .catch(error => {
-        alert("Error: " + error.message);
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
       });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        const player = document.getElementById("audioPlayer");
+        player.src = audioUrl;
+        player.hidden = false;
+        player.play();
+      } else {
+        alert("Error generating voice.");
+      }
     }
   </script>
 </body>
