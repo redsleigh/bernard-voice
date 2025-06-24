@@ -1,43 +1,45 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import requests
 import os
 
 app = Flask(__name__)
+CORS(app)
 
-ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
-VOICE_ID = os.environ.get("VOICE_ID")
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 
 @app.route("/generate", methods=["POST"])
-def generate():
-    data = request.get_json()
-
-    if not data or "text" not in data:
-        return jsonify({"error": "No text provided"}), 400
-
-    text = data["text"]
-    if not ELEVENLABS_API_KEY or not VOICE_ID:
-        return jsonify({"error": "API key or Voice ID not configured"}), 500
-
+def generate_voice():
     try:
-        response = requests.post(
-            f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}",
-            headers={
-                "xi-api-key": ELEVENLABS_API_KEY,
-                "Content-Type": "application/json"
-            },
-            json={
-                "text": text,
-                "voice_settings": {
-                    "stability": 0.5,
-                    "similarity_boost": 0.5
-                }
+        data = request.get_json()
+        text = data.get("text", "")
+        voice_id = data.get("voice_id", "")
+
+        if not text or not voice_id:
+            return jsonify({"error": "Missing text or voice_id"}), 400
+
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream"
+        headers = {
+            "xi-api-key": ELEVENLABS_API_KEY,
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "text": text,
+            "voice_settings": {
+                "stability": 0.5,
+                "similarity_boost": 0.75
             }
-        )
+        }
 
+        response = requests.post(url, headers=headers, json=payload)
         if response.status_code != 200:
-            return jsonify({"error": "Failed to generate audio"}), 500
+            return jsonify({"error": "ElevenLabs API error"}), 500
 
-        return response.content, 200, {"Content-Type": "audio/mpeg"}
+        # Save audio to file
+        with open("static/response.mp3", "wb") as f:
+            f.write(response.content)
+
+        return jsonify({"audio_url": "/static/response.mp3"}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
