@@ -1,72 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>North Pole Voice Assistant</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #e9f6ff;
-            text-align: center;
-            padding: 2em;
-        }
-        input[type="text"] {
-            width: 70%;
-            padding: 0.75em;
-            font-size: 1em;
-        }
-        button {
-            padding: 0.75em 2em;
-            font-size: 1em;
-            background-color: #0077cc;
-            color: white;
-            border: none;
-            margin-top: 1em;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #005fa3;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>North Pole Voice Assistant</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+      background-color: #f0f8ff;
+      padding: 40px;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 1.1em;
+      width: 80%;
+      margin: 10px 0;
+    }
+    #response {
+      margin-top: 20px;
+      font-style: italic;
+      color: #2c3e50;
+    }
+  </style>
 </head>
 <body>
-    <h1>🎙️ North Pole Voice Assistant</h1>
-    <p>Type a message to Bernard, Pepper, or Snowflake below:</p>
-    <input type="text" id="userInput" placeholder="Hey Bernard, how are the toys coming?" />
-    <br />
-    <button onclick="sendToWorkshop()">Send to Santa's Workshop</button>
+  <h1>🎙️ North Pole Voice Assistant</h1>
+  <p>Type a message to Bernard, Pepper, or Snowflake below:</p>
 
-    <p id="status" style="margin-top: 1em; color: red;"></p>
+  <input type="text" id="userInput" placeholder="e.g. Hey Snowflake, what’s the plan today?" />
+  <br/>
+  <button onclick="sendMessage()">Send to Santa's Workshop</button>
 
-    <script>
-        async function sendToWorkshop() {
-            const userInput = document.getElementById('userInput').value;
-            const status = document.getElementById('status');
-            status.textContent = '🎄 Thinking...';
+  <div id="response"></div>
 
-            try {
-                const response = await fetch('/generate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ prompt: userInput })
-                });
+  <script>
+    // Elf voice ID mapping
+    const VOICES = {
+      bernard: "VCgLBmBjldJmfphyB8sZ",
+      pepper: "W4crgEyhEtLRIj1Y3LnP",
+      snowflake: "uHiItyLY8A5jJv9AKoH9"
+    };
 
-                if (!response.ok) {
-                    throw new Error(`Server error: ${response.status}`);
-                }
+    function detectElf(text) {
+      const lower = text.toLowerCase();
+      if (lower.includes("pepper")) return VOICES.pepper;
+      if (lower.includes("snowflake")) return VOICES.snowflake;
+      return VOICES.bernard;
+    }
 
-                const blob = await response.blob();
-                const audioURL = URL.createObjectURL(blob);
-                const audio = new Audio(audioURL);
-                audio.play();
-                status.textContent = '';
-            } catch (err) {
-                console.error(err);
-                status.textContent = '❌ Something went wrong.';
-            }
+    async function sendMessage() {
+      const input = document.getElementById("userInput").value.trim();
+      const responseDiv = document.getElementById("response");
+
+      if (!input) {
+        responseDiv.textContent = "Please type a message first.";
+        return;
+      }
+
+      const voice_id = detectElf(input);
+      responseDiv.textContent = "🎧 Working on it...";
+
+      try {
+        const response = await fetch("/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            text: input,
+            voice_id: voice_id
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error("Server error");
         }
-    </script>
+
+        const result = await response.json();
+        const audio = new Audio(result.audio_url);
+        audio.play();
+        responseDiv.textContent = "✅ Your elf has responded!";
+      } catch (err) {
+        console.error(err);
+        responseDiv.textContent = "❌ Something went wrong.";
+      }
+    }
+  </script>
 </body>
 </html>
