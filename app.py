@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template  # ✅ added render_template
 from flask_cors import CORS
 import requests
 import os
@@ -7,6 +7,11 @@ app = Flask(__name__)
 CORS(app)
 
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+
+# ✅ ADD THIS ROUTE TO SERVE THE HOMEPAGE
+@app.route("/")
+def home():
+    return render_template("index.html")  # assumes index.html is in templates/
 
 @app.route("/generate", methods=["POST"])
 def generate_voice():
@@ -35,7 +40,6 @@ def generate_voice():
         if response.status_code != 200:
             return jsonify({"error": "ElevenLabs API error"}), 500
 
-        # Save audio to file
         with open("static/response.mp3", "wb") as f:
             f.write(response.content)
 
