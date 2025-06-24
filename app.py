@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template  # ✅ added render_template
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import requests
 import os
@@ -8,17 +8,16 @@ CORS(app)
 
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 
-# ✅ ADD THIS ROUTE TO SERVE THE HOMEPAGE
 @app.route("/")
 def home():
-    return render_template("index.html")  # assumes index.html is in templates/
+    return render_template("index.html")
 
 @app.route("/generate", methods=["POST"])
 def generate_voice():
     try:
         data = request.get_json()
         text = data.get("text", "")
-        voice_id = data.get("voice_id", "")
+        voice_id = data.get("voice_id") or os.getenv("VOICE_ID")  # ✅ fallback to env
 
         if not text or not voice_id:
             return jsonify({"error": "Missing text or voice_id"}), 400
@@ -48,5 +47,6 @@ def generate_voice():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# ✅ Start the Flask app
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=10000)
