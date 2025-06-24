@@ -4,8 +4,8 @@ import os
 
 app = Flask(__name__)
 
-# Load your OpenAI API key from environment variable or set it directly
-openai.api_key = os.getenv("OPENAI_API_KEY", "sk-...")  # Replace with your real key or use environment
+# Load your OpenAI API key from environment variable
+openai.api_key = os.getenv("OPENAI_API_KEY", "sk-...")  # Replace with your actual key or use env var
 
 @app.route('/')
 def home():
@@ -34,5 +34,6 @@ def generate():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Ensure this runs correctly on Render (host + port)
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=10000, debug=True)
