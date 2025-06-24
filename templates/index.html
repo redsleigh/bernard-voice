@@ -9,101 +9,98 @@
       margin: 0;
       padding: 0;
       font-family: 'Segoe UI', sans-serif;
-      background: url('https://www.transparenttextures.com/patterns/snow.png') repeat, #f0f8ff;
-      background-size: auto;
       text-align: center;
+      background: url('/static/festive-bg.png') no-repeat center center fixed;
+      background-size: cover;
       min-height: 100vh;
       display: flex;
-      flex-direction: column;
       justify-content: center;
-      padding: 2rem;
+      align-items: center;
     }
-    h1 {
-      font-size: 1.8rem;
-      margin-bottom: 0.5rem;
-      color: #c0392b;
-    }
-    p {
-      font-size: 1rem;
-      margin-bottom: 1.5rem;
-      color: #2c3e50;
-    }
-    input {
-      width: 90%;
+
+    .container {
+      background-color: rgba(255, 255, 255, 0.85);
+      padding: 20px;
+      border-radius: 12px;
       max-width: 500px;
-      padding: 12px;
-      font-size: 1.1em;
-      border: 2px solid #ccc;
-      border-radius: 8px;
+      width: 90%;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     }
-    button {
-      margin-top: 1rem;
-      padding: 12px 20px;
-      font-size: 1.1em;
-      border: none;
+
+    h1 {
+      font-size: 1.8em;
+      margin-bottom: 10px;
+      color: #b30000;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 12px;
+      font-size: 1em;
+      margin: 10px 0;
       border-radius: 8px;
-      background-color: #3498db;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background-color: #1e90ff;
       color: white;
+      border: none;
+      font-weight: bold;
       cursor: pointer;
     }
+
     button:hover {
-      background-color: #2980b9;
+      background-color: #005fa3;
     }
+
     #response {
-      margin-top: 2rem;
+      margin-top: 15px;
       font-style: italic;
-      color: #2c3e50;
-      font-size: 1.1em;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
+      color: #444;
     }
-    @media (max-width: 600px) {
+
+    @media (max-width: 500px) {
       h1 {
-        font-size: 1.5rem;
+        font-size: 1.5em;
       }
+
       input, button {
         font-size: 1em;
-        width: 100%;
       }
     }
   </style>
 </head>
 <body>
-  <h1>🎙️ North Pole Voice Assistant</h1>
-  <p>Type a message to Bernard, Pepper, or Snowflake below:</p>
-
-  <input type="text" id="userInput" placeholder="e.g. Hey Snowflake, what’s the plan today?" />
-  <br/>
-  <button onclick="sendMessage()">Send to Santa's Workshop</button>
-
-  <div id="response"></div>
+  <div class="container">
+    <h1>🎙️ North Pole Voice Assistant</h1>
+    <p>Type a message to Bernard, Pepper, or Snowflake:</p>
+    <input type="text" id="userInput" placeholder="e.g. Hey Bernard, what’s the plan today?" />
+    <button onclick="sendMessage()">Send to Santa's Workshop</button>
+    <div id="response"></div>
+  </div>
 
   <script>
     async function sendMessage() {
       const input = document.getElementById("userInput").value.trim();
+      const responseDiv = document.getElementById("response");
       if (!input) return;
 
-      const responseDiv = document.getElementById("response");
       responseDiv.textContent = "🎧 Working on it...";
 
       try {
         const response = await fetch("/generate", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            text: input
-          })
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: input })
         });
 
         if (!response.ok) throw new Error("Server error");
 
         const result = await response.json();
         const voiceText = result.response;
-
         responseDiv.textContent = voiceText;
+
         const synth = window.speechSynthesis;
         const utter = new SpeechSynthesisUtterance(voiceText);
         synth.speak(utter);
