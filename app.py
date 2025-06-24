@@ -6,7 +6,6 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-# Load API key and voice ID from environment variables
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 VOICE_ID = os.getenv("VOICE_ID")
 

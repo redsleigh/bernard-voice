@@ -6,67 +6,50 @@
   <title>North Pole Voice Assistant</title>
   <style>
     body {
-      margin: 0;
-      padding: 0;
       font-family: 'Segoe UI', sans-serif;
-      text-align: center;
-      background: url('/static/festive-bg.png') no-repeat center center fixed;
+      background-image: url("{{ url_for('static', filename='festive-bg.png') }}");
       background-size: cover;
-      min-height: 100vh;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-attachment: fixed;
       display: flex;
       justify-content: center;
       align-items: center;
+      min-height: 100vh;
+      margin: 0;
     }
 
     .container {
       background-color: rgba(255, 255, 255, 0.85);
       padding: 20px;
-      border-radius: 12px;
-      max-width: 500px;
-      width: 90%;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    }
-
-    h1 {
-      font-size: 1.8em;
-      margin-bottom: 10px;
-      color: #b30000;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+      max-width: 90%;
+      width: 400px;
+      text-align: center;
     }
 
     input, button {
-      width: 100%;
-      padding: 12px;
+      padding: 10px;
       font-size: 1em;
       margin: 10px 0;
-      border-radius: 8px;
-      border: 1px solid #ccc;
+      width: 100%;
     }
 
-    button {
-      background-color: #1e90ff;
-      color: white;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #005fa3;
+    h1 {
+      color: #b22222;
     }
 
     #response {
       margin-top: 15px;
       font-style: italic;
-      color: #444;
+      color: #2c3e50;
     }
 
     @media (max-width: 500px) {
-      h1 {
-        font-size: 1.5em;
-      }
-
-      input, button {
-        font-size: 1em;
+      .container {
+        width: 90%;
+        padding: 15px;
       }
     }
   </style>
@@ -75,8 +58,10 @@
   <div class="container">
     <h1>🎙️ North Pole Voice Assistant</h1>
     <p>Type a message to Bernard, Pepper, or Snowflake:</p>
-    <input type="text" id="userInput" placeholder="e.g. Hey Bernard, what’s the plan today?" />
+
+    <input type="text" id="userInput" placeholder="What’s the status in the Workshop?" />
     <button onclick="sendMessage()">Send to Santa's Workshop</button>
+
     <div id="response"></div>
   </div>
 
@@ -84,6 +69,7 @@
     async function sendMessage() {
       const input = document.getElementById("userInput").value.trim();
       const responseDiv = document.getElementById("response");
+
       if (!input) return;
 
       responseDiv.textContent = "🎧 Working on it...";
@@ -91,19 +77,21 @@
       try {
         const response = await fetch("/generate", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json"
+          },
           body: JSON.stringify({ text: input })
         });
 
-        if (!response.ok) throw new Error("Server error");
-
         const result = await response.json();
-        const voiceText = result.response;
-        responseDiv.textContent = voiceText;
 
-        const synth = window.speechSynthesis;
-        const utter = new SpeechSynthesisUtterance(voiceText);
-        synth.speak(utter);
+        if (!response.ok) {
+          throw new Error(result.error || "Server error");
+        }
+
+        responseDiv.textContent = "🔊 Bernard is speaking...";
+        const audio = new Audio(result.audio_url);
+        audio.play();
       } catch (err) {
         console.error(err);
         responseDiv.textContent = "❌ Something went wrong.";
