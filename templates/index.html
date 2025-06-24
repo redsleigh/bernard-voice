@@ -1,96 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Bernard Voice Assistant</title>
   <style>
     body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: repeating-linear-gradient(
         45deg,
-        rgba(170, 0, 0, 0.5),
-        rgba(170, 0, 0, 0.5) 10px,
-        rgba(153, 0, 0, 0.5) 10px,
-        rgba(153, 0, 0, 0.5) 20px
+        rgba(139, 0, 0, 0.15),
+        rgba(139, 0, 0, 0.15) 10px,
+        rgba(255, 0, 0, 0.15) 10px,
+        rgba(255, 0, 0, 0.15) 20px
       );
-      font-family: 'Georgia', serif;
-      color: gold;
-      text-align: center;
-      padding-top: 100px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      padding: 1rem;
     }
 
     .container {
-      background-color: rgba(60, 0, 0, 0.7);
-      border: 2px solid gold;
-      border-radius: 20px;
-      padding: 40px;
-      width: 60%;
-      margin: auto;
-      box-shadow: 0 0 25px 5px gold;
+      background: linear-gradient(to bottom right, #5c1a1a, #702020);
+      padding: 2rem;
+      border-radius: 15px;
+      box-shadow: 0 0 20px 5px gold;
+      max-width: 90%;
+      width: 600px;
+      text-align: center;
     }
 
     h1 {
-      font-size: 2.5em;
-      margin-bottom: 10px;
+      color: gold;
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    h1 .emoji {
+      margin-right: 0.25rem;
+    }
+
+    p {
+      color: gold;
+      font-size: 1rem;
+      margin-bottom: 1.5rem;
     }
 
     textarea {
-      width: 90%;
+      width: 100%;
       height: 100px;
-      margin-top: 20px;
-      font-size: 1.1em;
-      padding: 10px;
+      padding: 0.75rem;
+      border: none;
       border-radius: 10px;
-      border: 2px solid #ccc;
+      font-size: 1rem;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
     }
 
     button {
-      margin-top: 20px;
-      padding: 12px 30px;
-      font-size: 1.2em;
+      margin-top: 1rem;
       background-color: gold;
-      color: maroon;
       border: none;
+      padding: 0.75rem 1.5rem;
       border-radius: 8px;
-      cursor: pointer;
       font-weight: bold;
+      font-size: 1rem;
+      color: #5c1a1a;
+      cursor: pointer;
     }
 
-    button:hover {
-      background-color: darkorange;
+    @media (max-width: 600px) {
+      .container {
+        padding: 1.5rem;
+        width: 95%;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      p {
+        font-size: 0.95rem;
+      }
+
+      textarea {
+        height: 90px;
+        font-size: 0.95rem;
+      }
+
+      button {
+        padding: 0.6rem 1.2rem;
+        font-size: 0.95rem;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🎄 Bernard Voice Assistant 🎙️</h1>
+    <h1><span class="emoji">🎄</span> Bernard Voice Assistant <span class="emoji">🎙️</span></h1>
     <p>Enter something for Bernard to say:</p>
-    <textarea id="textInput" placeholder="Type your holiday message here..."></textarea><br>
-    <button onclick="sendText()">Speak</button>
-    <audio id="audioPlayer" style="margin-top: 20px;" controls hidden></audio>
+    <form action="/speak" method="post">
+      <textarea name="text" placeholder="Type your holiday message here..." required></textarea><br />
+      <button type="submit">Speak</button>
+    </form>
   </div>
-
-  <script>
-    async function sendText() {
-      const text = document.getElementById("textInput").value;
-      if (!text.trim()) return;
-
-      const response = await fetch("/speak", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text })
-      });
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const audioUrl = URL.createObjectURL(blob);
-        const player = document.getElementById("audioPlayer");
-        player.src = audioUrl;
-        player.hidden = false;
-        player.play();
-      } else {
-        alert("Error generating voice.");
-      }
-    }
-  </script>
 </body>
 </html>
