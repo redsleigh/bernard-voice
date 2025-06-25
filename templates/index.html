@@ -67,7 +67,8 @@
 
   <script>
     async function sendMessage() {
-      const input = document.getElementById("userInput").value.trim();
+      const inputEl = document.getElementById("userInput");
+      const input = inputEl.value.trim();
       const responseDiv = document.getElementById("response");
 
       if (!input) return;
@@ -77,21 +78,26 @@
       try {
         const response = await fetch("/generate", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text: input })
         });
 
         const result = await response.json();
 
-        if (!response.ok) {
+        if (!response.ok || !result.audio_url) {
           throw new Error(result.error || "Server error");
         }
 
         responseDiv.textContent = "🔊 Bernard is speaking...";
+        inputEl.value = ""; // ✅ clear input box
+
         const audio = new Audio(result.audio_url);
         audio.play();
+
+        // ✅ clear message when audio finishes
+        audio.onended = () => {
+          responseDiv.textContent = "";
+        };
       } catch (err) {
         console.error(err);
         responseDiv.textContent = "❌ Something went wrong.";
