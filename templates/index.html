@@ -17,46 +17,53 @@
       align-items: center;
       min-height: 100vh;
       margin: 0;
-      transition: background 0.5s ease, color 0.5s ease;
     }
 
     .container {
-      background-color: rgba(255, 255, 255, 0.85);
-      padding: 20px;
-      border-radius: 10px;
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 25px;
+      border-radius: 12px;
       box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
       max-width: 90%;
       width: 400px;
       text-align: center;
-      transition: background-color 0.3s ease;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .dark-mode {
+      background-color: #1c1c1c !important;
+      color: #f5f5f5;
     }
 
     input, button {
       padding: 10px;
       font-size: 1em;
       margin: 10px 0;
-      width: 100%;
+      width: calc(100% - 20px);
+      box-sizing: border-box;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background-color: #f0f0f0;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #ddd;
     }
 
     h1 {
       color: #b22222;
+      margin-bottom: 10px;
     }
 
     #response {
       margin-top: 15px;
       font-style: italic;
-      color: #2c3e50;
-    }
-
-    .night-mode body {
-      background-color: #121212;
-      background-image: none;
-      color: #eee;
-    }
-
-    .night-mode .container {
-      background-color: #1f1f1f;
-      color: #eee;
     }
 
     @media (max-width: 500px) {
@@ -68,55 +75,51 @@
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="container" id="app">
     <h1>🎙️ North Pole Voice Assistant</h1>
     <p>Type a message to Bernard, Pepper, or Snowflake:</p>
 
     <input type="text" id="userInput" placeholder="What’s the status in the Workshop?" />
     <button onclick="sendMessage()">Send to Santa's Workshop</button>
-    <button onclick="toggleNightMode()">🌙 Toggle Night Mode</button>
+    <button onclick="toggleDarkMode()">🌙 Toggle Night Mode</button>
 
     <div id="response"></div>
   </div>
 
   <script>
-    function toggleNightMode() {
-      document.body.classList.toggle("night-mode");
-    }
-
     async function sendMessage() {
-      const inputField = document.getElementById("userInput");
-      const input = inputField.value.trim();
-      if (!input) return;
+      const input = document.getElementById("userInput");
+      const text = input.value.trim();
+      if (!text) return;
 
       const responseDiv = document.getElementById("response");
-      responseDiv.textContent = "🎧 Working on it...";
+      responseDiv.textContent = "🎧 Bernard is speaking...";
 
       try {
         const response = await fetch("/generate", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ text: input })
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: text })
         });
 
         const result = await response.json();
-        if (!response.ok) throw new Error(result.error || "Server error");
+        if (!response.ok) {
+          throw new Error(result.error || "Server error");
+        }
 
-        responseDiv.textContent = `🗣️ Bernard is speaking...`;
+        responseDiv.textContent = ""; // clear speaking message
         const audio = new Audio(result.audio_url);
         audio.play();
 
-        audio.onended = () => {
-          responseDiv.textContent = "";
-          inputField.value = ""; // Clear input
-        };
-
+        input.value = ""; // clear the input box
       } catch (err) {
         console.error(err);
         responseDiv.textContent = "❌ Something went wrong.";
       }
+    }
+
+    function toggleDarkMode() {
+      document.getElementById("app").classList.toggle("dark-mode");
     }
   </script>
 </body>

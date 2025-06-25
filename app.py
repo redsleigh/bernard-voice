@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, url_for
 from flask_cors import CORS
 import requests
 import os
@@ -20,7 +20,7 @@ def generate_voice():
         text = data.get("text", "")
 
         if not text or not VOICE_ID:
-            return jsonify({"error": "Missing text or voice_id"}), 400
+            return jsonify({"error": "Missing text or voice ID"}), 400
 
         url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}/stream"
         headers = {
