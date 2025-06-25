@@ -20,24 +20,39 @@
     }
 
     .container {
-      background-color: rgba(255, 255, 255, 0.85);
-      padding: 20px;
-      border-radius: 10px;
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 20px 25px;
+      border-radius: 12px;
       box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
-      max-width: 90%;
-      width: 400px;
       text-align: center;
-    }
-
-    input, button {
-      padding: 10px;
-      font-size: 1em;
-      margin: 10px 0;
-      width: 100%;
+      width: 90%;
+      max-width: 400px;
     }
 
     h1 {
       color: #b22222;
+      margin-top: 0;
+    }
+
+    input, button {
+      padding: 12px;
+      margin: 10px 0;
+      font-size: 1em;
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      background-color: #2196f3;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+    }
+
+    button:hover {
+      background-color: #1976d2;
     }
 
     #response {
@@ -59,48 +74,54 @@
     <h1>🎙️ North Pole Voice Assistant</h1>
     <p>Type a message to Bernard, Pepper, or Snowflake:</p>
 
-    <input type="text" id="userInput" placeholder="What’s the status in the Workshop?" />
+    <input type="text" id="userInput" placeholder="e.g. Hey Bernard, what's the update?" />
     <button onclick="sendMessage()">Send to Santa's Workshop</button>
 
     <div id="response"></div>
   </div>
 
   <script>
+    let lastAudio = null;
+
     async function sendMessage() {
       const inputEl = document.getElementById("userInput");
-      const input = inputEl.value.trim();
+      const text = inputEl.value.trim();
       const responseDiv = document.getElementById("response");
 
-      if (!input) return;
+      if (!text) return;
 
-      responseDiv.textContent = "🎧 Working on it...";
+      responseDiv.innerHTML = "🎧 Working on it...";
+      inputEl.disabled = true;
 
       try {
         const response = await fetch("/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: input })
+          body: JSON.stringify({ text })
         });
 
         const result = await response.json();
 
-        if (!response.ok || !result.audio_url) {
+        if (!response.ok) {
           throw new Error(result.error || "Server error");
         }
 
-        responseDiv.textContent = "🔊 Bernard is speaking...";
-        inputEl.value = ""; // ✅ clear input box
+        responseDiv.innerHTML = "🗣️ Bernard is speaking...";
+        inputEl.value = "";
 
-        const audio = new Audio(result.audio_url);
-        audio.play();
+        lastAudio = new Audio(result.audio_url);
+        lastAudio.play();
 
-        // ✅ clear message when audio finishes
-        audio.onended = () => {
+        lastAudio.onended = () => {
           responseDiv.textContent = "";
+          inputEl.disabled = false;
+          inputEl.focus();
         };
+
       } catch (err) {
         console.error(err);
         responseDiv.textContent = "❌ Something went wrong.";
+        inputEl.disabled = false;
       }
     }
   </script>
