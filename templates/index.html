@@ -17,48 +17,46 @@
       align-items: center;
       min-height: 100vh;
       margin: 0;
+      transition: background 0.5s ease, color 0.5s ease;
     }
 
     .container {
-      background-color: rgba(255, 255, 255, 0.9);
-      padding: 20px 25px;
-      border-radius: 12px;
+      background-color: rgba(255, 255, 255, 0.85);
+      padding: 20px;
+      border-radius: 10px;
       box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+      max-width: 90%;
+      width: 400px;
       text-align: center;
-      width: 90%;
-      max-width: 400px;
+      transition: background-color 0.3s ease;
+    }
+
+    input, button {
+      padding: 10px;
+      font-size: 1em;
+      margin: 10px 0;
+      width: 100%;
     }
 
     h1 {
       color: #b22222;
-      margin-top: 0;
-    }
-
-    input, button {
-      padding: 12px;
-      margin: 10px 0;
-      font-size: 1em;
-      width: 100%;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-
-    button {
-      background-color: #2196f3;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      border: none;
-    }
-
-    button:hover {
-      background-color: #1976d2;
     }
 
     #response {
       margin-top: 15px;
       font-style: italic;
       color: #2c3e50;
+    }
+
+    .night-mode body {
+      background-color: #121212;
+      background-image: none;
+      color: #eee;
+    }
+
+    .night-mode .container {
+      background-color: #1f1f1f;
+      color: #eee;
     }
 
     @media (max-width: 500px) {
@@ -74,54 +72,50 @@
     <h1>🎙️ North Pole Voice Assistant</h1>
     <p>Type a message to Bernard, Pepper, or Snowflake:</p>
 
-    <input type="text" id="userInput" placeholder="e.g. Hey Bernard, what's the update?" />
+    <input type="text" id="userInput" placeholder="What’s the status in the Workshop?" />
     <button onclick="sendMessage()">Send to Santa's Workshop</button>
+    <button onclick="toggleNightMode()">🌙 Toggle Night Mode</button>
 
     <div id="response"></div>
   </div>
 
   <script>
-    let lastAudio = null;
+    function toggleNightMode() {
+      document.body.classList.toggle("night-mode");
+    }
 
     async function sendMessage() {
-      const inputEl = document.getElementById("userInput");
-      const text = inputEl.value.trim();
+      const inputField = document.getElementById("userInput");
+      const input = inputField.value.trim();
+      if (!input) return;
+
       const responseDiv = document.getElementById("response");
-
-      if (!text) return;
-
-      responseDiv.innerHTML = "🎧 Working on it...";
-      inputEl.disabled = true;
+      responseDiv.textContent = "🎧 Working on it...";
 
       try {
         const response = await fetch("/generate", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text })
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ text: input })
         });
 
         const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Server error");
 
-        if (!response.ok) {
-          throw new Error(result.error || "Server error");
-        }
+        responseDiv.textContent = `🗣️ Bernard is speaking...`;
+        const audio = new Audio(result.audio_url);
+        audio.play();
 
-        responseDiv.innerHTML = "🗣️ Bernard is speaking...";
-        inputEl.value = "";
-
-        lastAudio = new Audio(result.audio_url);
-        lastAudio.play();
-
-        lastAudio.onended = () => {
+        audio.onended = () => {
           responseDiv.textContent = "";
-          inputEl.disabled = false;
-          inputEl.focus();
+          inputField.value = ""; // Clear input
         };
 
       } catch (err) {
         console.error(err);
         responseDiv.textContent = "❌ Something went wrong.";
-        inputEl.disabled = false;
       }
     }
   </script>
