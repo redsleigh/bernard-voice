@@ -17,23 +17,31 @@
       align-items: center;
       min-height: 100vh;
       margin: 0;
-      transition: background-color 0.5s, color 0.5s;
+      transition: background-color 0.3s ease;
     }
 
     .container {
-      background-color: rgba(255, 255, 255, 0.85);
+      background-color: rgba(255, 255, 255, 0.95);
       padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
-      max-width: 90%;
-      width: 400px;
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
+      width: 90%;
+      max-width: 400px;
       text-align: center;
-      transition: background-color 0.5s, color 0.5s;
+    }
+
+    .night-mode .container {
+      background-color: rgba(34, 34, 34, 0.95);
+      color: white;
     }
 
     h1 {
       color: #b22222;
-      margin-bottom: 10px;
+      margin-bottom: 0.5em;
+    }
+
+    .night-mode h1 {
+      color: #ff6961;
     }
 
     input, button {
@@ -41,110 +49,81 @@
       font-size: 1em;
       margin: 10px 0;
       width: calc(100% - 20px);
+      border-radius: 6px;
       border: 1px solid #ccc;
-      border-radius: 5px;
+    }
+
+    button {
+      background-color: #f5f5f5;
+      cursor: pointer;
     }
 
     #response {
       margin-top: 15px;
       font-style: italic;
-      color: #2c3e50;
     }
 
-    #toggleMode {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      padding: 5px 10px;
-      background: #333;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
+    .toggle-button {
+      margin-top: 10px;
       font-size: 0.9em;
+      cursor: pointer;
+      background-color: #eee;
+      border: none;
+      padding: 8px 12px;
     }
 
-    /* Night Mode Styling */
-    body.night-mode {
-      background-color: #1e1e1e;
-      background-image: none;
+    .night-mode .toggle-button {
+      background-color: #444;
       color: white;
-    }
-
-    body.night-mode .container {
-      background-color: rgba(40, 40, 40, 0.9);
-      color: white;
-    }
-
-    body.night-mode #response {
-      color: #ffffff;
-    }
-
-    body.night-mode input, body.night-mode button {
-      background-color: #2c2c2c;
-      color: white;
-      border: 1px solid #555;
-    }
-
-    @media (max-width: 500px) {
-      .container {
-        width: 90%;
-        padding: 15px;
-      }
     }
   </style>
 </head>
 <body>
-  <button id="toggleMode" onclick="toggleMode()">Toggle Night Mode</button>
-
   <div class="container">
     <h1>🎙️ Santa's Workshop Hotline</h1>
     <p>Type a message to Bernard, Pepper, or Snowflake:</p>
 
     <input type="text" id="userInput" placeholder="What’s the status in the Workshop?" />
     <button onclick="sendMessage()">Send to Santa's Workshop</button>
+    <button class="toggle-button" onclick="toggleNightMode()">🌙 Toggle Night Mode</button>
 
     <div id="response"></div>
   </div>
 
   <script>
-    function toggleMode() {
-      document.body.classList.toggle("night-mode");
+    function toggleNightMode() {
+      document.body.classList.toggle('night-mode');
     }
 
     async function sendMessage() {
-      const inputBox = document.getElementById("userInput");
-      const input = inputBox.value.trim();
-      if (!input) return;
+      const inputEl = document.getElementById("userInput");
+      const text = inputEl.value.trim();
+      const responseEl = document.getElementById("response");
+      if (!text) return;
 
-      const responseDiv = document.getElementById("response");
-      responseDiv.textContent = "🎧 Working on it...";
-      inputBox.disabled = true;
+      responseEl.textContent = "🎧 Working on it...";
 
       try {
         const response = await fetch("/generate", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ text: input })
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text })
         });
 
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || "Server error");
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Server error");
 
-        const voiceText = result.response;
-        responseDiv.textContent = voiceText;
-
-        const synth = window.speechSynthesis;
-        synth.speak(new SpeechSynthesisUtterance(voiceText));
+        const voiceText = data.response;
+        responseEl.textContent = "🔊 Bernard is speaking...";
+        const utterance = new SpeechSynthesisUtterance(voiceText);
+        utterance.onend = () => {
+          responseEl.textContent = "";
+        };
+        window.speechSynthesis.speak(utterance);
+        inputEl.value = "";
       } catch (err) {
         console.error(err);
-        responseDiv.textContent = "❌ Something went wrong.";
-      } finally {
-        inputBox.value = "";
-        inputBox.disabled = false;
-        inputBox.focus();
+        responseEl.textContent = "❌ Something went wrong.";
       }
     }
   </script>
