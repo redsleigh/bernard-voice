@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Santa's Workshop Hotline</title>
+  <title>North Pole Voice Assistant</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background-image: url("{{ url_for('static', filename='festive-bg-v2.png') }}");
+      background-image: url("{{ url_for('static', filename='festive-bg.png') }}");
       background-size: cover;
       background-repeat: no-repeat;
       background-position: center;
@@ -17,113 +17,105 @@
       align-items: center;
       min-height: 100vh;
       margin: 0;
-      transition: background-color 0.3s ease;
+      transition: background 0.5s ease, color 0.5s ease;
     }
 
     .container {
-      background-color: rgba(255, 255, 255, 0.95);
+      background-color: rgba(255, 255, 255, 0.85);
       padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
-      width: 90%;
-      max-width: 400px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+      max-width: 90%;
+      width: 400px;
       text-align: center;
-    }
-
-    .night-mode .container {
-      background-color: rgba(34, 34, 34, 0.95);
-      color: white;
-    }
-
-    h1 {
-      color: #b22222;
-      margin-bottom: 0.5em;
-    }
-
-    .night-mode h1 {
-      color: #ff6961;
+      transition: background-color 0.3s ease;
     }
 
     input, button {
       padding: 10px;
       font-size: 1em;
       margin: 10px 0;
-      width: calc(100% - 20px);
-      border-radius: 6px;
-      border: 1px solid #ccc;
+      width: 100%;
     }
 
-    button {
-      background-color: #f5f5f5;
-      cursor: pointer;
+    h1 {
+      color: #b22222;
     }
 
     #response {
       margin-top: 15px;
       font-style: italic;
+      color: #2c3e50;
     }
 
-    .toggle-button {
-      margin-top: 10px;
-      font-size: 0.9em;
-      cursor: pointer;
-      background-color: #eee;
-      border: none;
-      padding: 8px 12px;
+    .night-mode body {
+      background-color: #121212;
+      background-image: none;
+      color: #eee;
     }
 
-    .night-mode .toggle-button {
-      background-color: #444;
-      color: white;
+    .night-mode .container {
+      background-color: #1f1f1f;
+      color: #eee;
+    }
+
+    @media (max-width: 500px) {
+      .container {
+        width: 90%;
+        padding: 15px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🎙️ Santa's Workshop Hotline</h1>
+    <h1>🎙️ North Pole Voice Assistant</h1>
     <p>Type a message to Bernard, Pepper, or Snowflake:</p>
 
     <input type="text" id="userInput" placeholder="What’s the status in the Workshop?" />
     <button onclick="sendMessage()">Send to Santa's Workshop</button>
-    <button class="toggle-button" onclick="toggleNightMode()">🌙 Toggle Night Mode</button>
+    <button onclick="toggleNightMode()">🌙 Toggle Night Mode</button>
 
     <div id="response"></div>
   </div>
 
   <script>
     function toggleNightMode() {
-      document.body.classList.toggle('night-mode');
+      document.body.classList.toggle("night-mode");
     }
 
     async function sendMessage() {
-      const inputEl = document.getElementById("userInput");
-      const text = inputEl.value.trim();
-      const responseEl = document.getElementById("response");
-      if (!text) return;
+      const inputField = document.getElementById("userInput");
+      const input = inputField.value.trim();
+      if (!input) return;
 
-      responseEl.textContent = "🎧 Working on it...";
+      const responseDiv = document.getElementById("response");
+      responseDiv.textContent = "🎧 Working on it...";
 
       try {
         const response = await fetch("/generate", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text })
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ text: input })
         });
 
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Server error");
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Server error");
 
-        const voiceText = data.response;
-        responseEl.textContent = "🔊 Bernard is speaking...";
-        const utterance = new SpeechSynthesisUtterance(voiceText);
-        utterance.onend = () => {
-          responseEl.textContent = "";
+        responseDiv.textContent = `🗣️ Bernard is speaking...`;
+        const audio = new Audio(result.audio_url);
+        audio.play();
+
+        audio.onended = () => {
+          responseDiv.textContent = "";
+          inputField.value = ""; // Clear input
         };
-        window.speechSynthesis.speak(utterance);
-        inputEl.value = "";
+
       } catch (err) {
         console.error(err);
-        responseEl.textContent = "❌ Something went wrong.";
+        responseDiv.textContent = "❌ Something went wrong.";
       }
     }
   </script>
