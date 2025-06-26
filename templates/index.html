@@ -33,7 +33,7 @@
       padding: 12px;
       font-size: 1em;
       margin: 10px 0;
-      width: 100%;
+      width: calc(100% - 20px); /* ✅ fixes edge overflow */
     }
 
     h1 {
@@ -83,7 +83,8 @@
 
   <script>
     async function sendMessage() {
-      const input = document.getElementById("userInput").value.trim();
+      const inputBox = document.getElementById("userInput");
+      const input = inputBox.value.trim();
       if (!input) return;
 
       const responseDiv = document.getElementById("response");
@@ -97,13 +98,20 @@
         });
 
         const result = await response.json();
-        if (!response.ok) throw new Error(result.error || "Server error");
+        if (!response.ok || !result.audio_url) {
+          throw new Error(result.error || "Server error");
+        }
 
-        const voiceText = result.response;
-        responseDiv.textContent = voiceText;
+        // Clear input and response spinner
+        inputBox.value = "";
+        responseDiv.innerHTML = "✅ Bernard is speaking...";
 
-        const synth = window.speechSynthesis;
-        synth.speak(new SpeechSynthesisUtterance(voiceText));
+        // Play audio
+        const audio = new Audio(result.audio_url);
+        audio.play().then(() => {
+          responseDiv.textContent = ""; // clear once finished
+        });
+
       } catch (err) {
         console.error(err);
         responseDiv.textContent = "❌ Something went wrong.";
