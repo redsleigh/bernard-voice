@@ -1,4 +1,4 @@
-# Version: v4.2.3 | Date: 06/27/2025 | Voice selector integrated
+# Version: v4.2.4 | Date: 06/27/2025 | Voice selector using actual ElevenLabs IDs
 from flask import Flask, request, send_file, render_template
 from io import BytesIO
 import os
@@ -6,12 +6,14 @@ import requests
 
 app = Flask(__name__)
 
-# Set your ElevenLabs API key here
+# Your ElevenLabs API key must be set in environment variables on Render or locally
 ELEVEN_API_KEY = os.getenv("ELEVEN_API_KEY")
+
+# Real voice IDs
 VOICE_MAP = {
-    "bernard": "voice_id_1",   # Replace with real IDs
-    "twinkle": "voice_id_2",
-    "jingles": "voice_id_3"
+    "bernard": "VCgLBmBjldJmfphyB8sZ",
+    "snowflake": "uHiItyLY8A5jJv9AKoH9",
+    "pepper": "W4crgEyhEtLRIj1Y3LnP"
 }
 
 @app.route("/")
@@ -24,7 +26,9 @@ def generate():
     text = data.get("text", "")
     voice_key = data.get("voice", "bernard")
     voice_id = VOICE_MAP.get(voice_key, VOICE_MAP["bernard"])
+    return synthesize_speech(text, voice_id)
 
+def synthesize_speech(text, voice_id):
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
     headers = {
         "xi-api-key": ELEVEN_API_KEY,
@@ -43,8 +47,6 @@ def generate():
     if response.status_code != 200:
         return f"Error: {response.text}", 500
 
-    audio_data = BytesIO(response.content)
-    return send_file(audio_data, mimetype="audio/mpeg")
+    return send_file(BytesIO(response.content), mimetype="audio/mpeg")
 
-if __name__ == "__main__":
-    app.run(debug=True)
+# Do not run app.run() when using Gunicorn

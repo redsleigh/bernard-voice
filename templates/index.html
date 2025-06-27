@@ -1,4 +1,4 @@
-<!-- Version: v4.2.3 | Date: 06/27/2025 | Voice dropdown added -->
+<!-- Version: v4.2.4 | Date: 06/27/2025 | Real voice selector (Bernard, Snowflake, Pepper) added -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,7 +9,7 @@
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
-      background: url('background.jpg') no-repeat center center fixed;
+      background: url('festive-bg-v2.jpg') no-repeat center center fixed;
       background-size: cover;
       color: black;
       transition: background-color 0.5s, color 0.5s;
@@ -60,16 +60,18 @@
 <body>
   <div class="container">
     <h1 id="title">Santa's Workshop Hotline</h1>
+
     <label for="voice">Choose a voice:</label>
     <select id="voice">
       <option value="bernard">Bernard (Default)</option>
-      <option value="twinkle">Twinkle</option>
-      <option value="jingles">Jingles</option>
+      <option value="snowflake">Snowflake</option>
+      <option value="pepper">Pepper</option>
     </select>
 
     <label for="text">Message to Bernard:</label>
     <textarea id="text" rows="4" placeholder="Type your message here..."></textarea>
     <button onclick="sendMessage()">Send to Bernard</button>
+
     <div id="spinner">🎄 Working on it…</div>
     <audio id="audio" controls style="width:100%; margin-top:1rem; display:none;"></audio>
 
@@ -80,11 +82,7 @@
     function toggleNightMode() {
       document.body.classList.toggle("dark-mode");
       const title = document.getElementById("title");
-      if (document.body.classList.contains("dark-mode")) {
-        title.style.color = "white";
-      } else {
-        title.style.color = "red";
-      }
+      title.style.color = document.body.classList.contains("dark-mode") ? "white" : "red";
     }
 
     async function sendMessage() {
@@ -92,20 +90,24 @@
       const voice = document.getElementById("voice").value;
       const spinner = document.getElementById("spinner");
       const audio = document.getElementById("audio");
+
       spinner.style.display = "block";
       audio.style.display = "none";
-      
+
       const response = await fetch("/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, voice })
       });
-      
+
       const data = await response.blob();
       const url = URL.createObjectURL(data);
       audio.src = url;
+      audio.play();
       spinner.style.display = "none";
       audio.style.display = "block";
+
+      document.getElementById("text").value = "";
     }
   </script>
 </body>
