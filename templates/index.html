@@ -7,39 +7,44 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-image: url('/static/festive-bg-v2.png');
+      background-image: url("/static/festive-bg-v2.png");
       background-size: cover;
       background-position: center;
+      color: #222;
       margin: 0;
       padding: 0;
     }
-
     .container {
-      background-color: rgba(255, 255, 255, 0.9);
-      border-radius: 10px;
-      padding: 30px;
       max-width: 500px;
-      margin: 80px auto;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      margin: 60px auto;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 10px;
       text-align: center;
     }
-
     h1 {
       color: red;
     }
-
     select, input, button {
-      padding: 10px;
-      margin: 10px 0;
-      width: 100%;
       font-size: 1em;
+      margin: 10px 0;
+      padding: 10px;
+      width: 100%;
+      border-radius: 5px;
+      border: 1px solid #ccc;
     }
-
+    button {
+      background-color: #eee;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #ddd;
+    }
     #status {
-      margin-top: 15px;
+      margin-top: 10px;
       font-style: italic;
+      color: darkgreen;
     }
-
     audio {
       margin-top: 20px;
       width: 100%;
@@ -49,58 +54,70 @@
 <body>
   <div class="container">
     <h1>Santa’s Workshop Hotline</h1>
+
     <label for="voice">Choose a voice:</label>
     <select id="voice">
-      <option value="Bernard">Bernard</option>
-      <option value="Pepper">Pepper</option>
-      <option value="Jingles">Jingles</option>
+      {% for voice in voices %}
+        <option value="{{ voice }}">{{ voice }}</option>
+      {% endfor %}
     </select>
+
     <input type="text" id="text" placeholder="What do you want to say to Bernard?" />
+
     <button onclick="sendToBernard()">Send to Bernard</button>
-    <button onclick="toggleNightMode()">Toggle Night Mode</button>
-    <p id="status">🎄 Bernard is thinking...</p>
-    <audio id="audioPlayer" controls></audio>
+    <button onclick="toggleNight()">Toggle Night Mode</button>
+
+    <p id="status">🎄 Bernard is standing by...</p>
+
+    <audio id="audio" controls></audio>
   </div>
 
   <script>
-    const audioPlayer = document.getElementById("audioPlayer");
-    const status = document.getElementById("status");
+    function sendToBernard() {
+      const voice = document.getElementById('voice').value;
+      const text = document.getElementById('text').value.trim();
+      const status = document.getElementById('status');
+      const audio = document.getElementById('audio');
 
-    async function sendToBernard() {
-      const voice = document.getElementById("voice").value;
-      const text = document.getElementById("text").value;
+      if (!text) {
+        alert("Please enter a message for Bernard!");
+        return;
+      }
 
       status.textContent = "🎄 Bernard is thinking...";
-      audioPlayer.src = "";
-      audioPlayer.load();
+      audio.src = "";
+      audio.load();
 
-      try {
-        const response = await fetch("/api/speak", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, voice })
-        });
-
-        if (!response.ok) throw new Error("Request failed");
-
-        const data = await response.json();
-        if (!data.audio_url) throw new Error("No audio URL in response");
-
-        audioPlayer.src = data.audio_url;
-        audioPlayer.load();
-        audioPlayer.play();
-        status.textContent = "✅ Bernard has spoken!";
-      } catch (err) {
-        status.textContent = "❌ Something went wrong!";
-        alert("Something went wrong!");
+      fetch('/api/speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voice, text })
+      })
+      .then(response => {
+        if (!response.ok) throw new Error("API call failed");
+        return response.json();
+      })
+      .then(data => {
+        if (data.audio_url) {
+          audio.src = data.audio_url + '?t=' + new Date().getTime();  // Bust cache
+          audio.load();
+          audio.play().catch(() => {
+            status.textContent = "✅ Ready to play — click the ▶️ button!";
+          });
+          status.textContent = "✅ Bernard is done!";
+        } else {
+          throw new Error("No audio returned.");
+        }
+      })
+      .catch(err => {
         console.error(err);
-      }
+        alert("Something went wrong!");
+        status.textContent = "❌ Bernard had an issue.";
+      });
     }
 
-    function toggleNightMode() {
-      const body = document.body;
-      body.style.backgroundColor = body.style.backgroundColor === "black" ? "" : "black";
-      body.style.color = body.style.color === "white" ? "" : "white";
+    function toggleNight() {
+      document.body.classList.toggle('night');
     }
   </script>
 </body>
