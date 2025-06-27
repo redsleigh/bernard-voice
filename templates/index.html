@@ -1,5 +1,4 @@
-<!-- Version: v4.2.1_hotline | Date: 06/28/2025 | Title updated to "Santa’s Workshop Hotline" -->
-
+<!-- Version: v4.3.2 | Date: 06/28/2025 | Added character limit + white title -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -59,13 +58,22 @@
     }
 
     h1 {
-      color: #b22222;
+      color: #ffffff;
       margin-bottom: 10px;
     }
 
     #response {
       margin-top: 15px;
       font-style: italic;
+    }
+
+    #charCount {
+      font-size: 0.9em;
+      color: #333;
+    }
+
+    .over-limit {
+      color: red;
     }
 
     @media (max-width: 500px) {
@@ -81,18 +89,38 @@
     <h1>🎙️ Santa’s Workshop Hotline</h1>
     <p>Type a message to Bernard, Pepper, or Snowflake:</p>
 
-    <input type="text" id="userInput" placeholder="What’s the status in the Workshop?" />
-    <button onclick="sendMessage()">Send to Santa's Workshop</button>
+    <input type="text" id="userInput" placeholder="What’s the status in the Workshop?" oninput="updateCharCount()" />
+    <div id="charCount">Characters remaining: 250</div>
+    <button id="sendBtn" onclick="sendMessage()">Send to Santa's Workshop</button>
     <button onclick="toggleDarkMode()">🌙 Toggle Night Mode</button>
 
     <div id="response"></div>
   </div>
 
   <script>
+    const maxChars = 250;
+
+    function updateCharCount() {
+      const input = document.getElementById("userInput");
+      const charCount = document.getElementById("charCount");
+      const sendBtn = document.getElementById("sendBtn");
+
+      const remaining = maxChars - input.value.length;
+      charCount.textContent = "Characters remaining: " + remaining;
+
+      if (remaining < 0) {
+        charCount.classList.add("over-limit");
+        sendBtn.disabled = true;
+      } else {
+        charCount.classList.remove("over-limit");
+        sendBtn.disabled = false;
+      }
+    }
+
     async function sendMessage() {
       const input = document.getElementById("userInput");
       const text = input.value.trim();
-      if (!text) return;
+      if (!text || text.length > maxChars) return;
 
       const responseDiv = document.getElementById("response");
       responseDiv.textContent = "🎧 Bernard is speaking...";
@@ -113,7 +141,8 @@
         const audio = new Audio(result.audio_url);
         audio.play();
 
-        input.value = ""; // clear the input box
+        input.value = ""; // clear input
+        updateCharCount(); // reset counter
       } catch (err) {
         console.error(err);
         responseDiv.textContent = "❌ Something went wrong.";
@@ -123,6 +152,9 @@
     function toggleDarkMode() {
       document.getElementById("app").classList.toggle("dark-mode");
     }
+
+    // Initialize on load
+    updateCharCount();
   </script>
 </body>
 </html>
