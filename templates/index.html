@@ -1,110 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Santa’s Workshop Hotline</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-image: url('/static/festive-bg-v2.png');
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-position: center;
-            text-align: center;
-            color: black;
-            padding-top: 100px;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Santa’s Workshop Hotline</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-image: url('/static/festive-bg-v2.png');
+      background-size: cover;
+      background-position: center;
+      margin: 0;
+      padding: 0;
+    }
 
-        .container {
-            background-color: rgba(255, 255, 255, 0.85);
-            display: inline-block;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-        }
+    .container {
+      background-color: rgba(255, 255, 255, 0.9);
+      border-radius: 10px;
+      padding: 30px;
+      max-width: 500px;
+      margin: 80px auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      text-align: center;
+    }
 
-        select, input[type="text"], button {
-            padding: 10px;
-            margin: 10px;
-            font-size: 16px;
-            width: 300px;
-        }
+    h1 {
+      color: red;
+    }
 
-        audio {
-            margin-top: 20px;
-        }
+    select, input, button {
+      padding: 10px;
+      margin: 10px 0;
+      width: 100%;
+      font-size: 1em;
+    }
 
-        #thinking {
-            margin-top: 15px;
-            font-style: italic;
-        }
+    #status {
+      margin-top: 15px;
+      font-style: italic;
+    }
 
-        .night {
-            background-color: #111;
-            color: #f1f1f1;
-        }
-    </style>
+    audio {
+      margin-top: 20px;
+      width: 100%;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Santa’s Workshop Hotline</h1>
+  <div class="container">
+    <h1>Santa’s Workshop Hotline</h1>
+    <label for="voice">Choose a voice:</label>
+    <select id="voice">
+      <option value="Bernard">Bernard</option>
+      <option value="Pepper">Pepper</option>
+      <option value="Jingles">Jingles</option>
+    </select>
+    <input type="text" id="text" placeholder="What do you want to say to Bernard?" />
+    <button onclick="sendToBernard()">Send to Bernard</button>
+    <button onclick="toggleNightMode()">Toggle Night Mode</button>
+    <p id="status">🎄 Bernard is thinking...</p>
+    <audio id="audioPlayer" controls></audio>
+  </div>
 
-        <label for="voice">Choose a voice:</label><br>
-        <select id="voice">
-            <option value="Bernard">Bernard</option>
-            <option value="Pepper">Pepper</option>
-            <option value="Sparkle">Sparkle</option>
-        </select><br>
+  <script>
+    const audioPlayer = document.getElementById("audioPlayer");
+    const status = document.getElementById("status");
 
-        <input type="text" id="text" placeholder="What do you want to say to Bernard?"><br>
+    async function sendToBernard() {
+      const voice = document.getElementById("voice").value;
+      const text = document.getElementById("text").value;
 
-        <button onclick="sendToBernard()">Send to Bernard</button>
-        <button onclick="toggleNightMode()">Toggle Night Mode</button>
+      status.textContent = "🎄 Bernard is thinking...";
+      audioPlayer.src = "";
+      audioPlayer.load();
 
-        <p id="thinking">🎄 Bernard is thinking...</p>
+      try {
+        const response = await fetch("/api/speak", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, voice })
+        });
 
-        <audio id="audio" controls style="display:none;"></audio>
-    </div>
+        if (!response.ok) throw new Error("Request failed");
 
-    <script>
-        function sendToBernard() {
-            const voice = document.getElementById("voice").value;
-            const text = document.getElementById("text").value;
-            const thinking = document.getElementById("thinking");
-            const audio = document.getElementById("audio");
+        const data = await response.json();
+        if (!data.audio_url) throw new Error("No audio URL in response");
 
-            thinking.textContent = "🎄 Bernard is thinking...";
-            audio.style.display = "none";
+        audioPlayer.src = data.audio_url;
+        audioPlayer.load();
+        audioPlayer.play();
+        status.textContent = "✅ Bernard has spoken!";
+      } catch (err) {
+        status.textContent = "❌ Something went wrong!";
+        alert("Something went wrong!");
+        console.error(err);
+      }
+    }
 
-            fetch("/api/speak", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ voice: voice, text: text })
-            })
-            .then(response => {
-                if (!response.ok) throw new Error("Network error");
-                return response.json();
-            })
-            .then(data => {
-                if (data.audio_url) {
-                    audio.src = data.audio_url;
-                    audio.style.display = "block";
-                    audio.play();
-                    thinking.textContent = "";
-                } else {
-                    throw new Error("No audio URL in response");
-                }
-            })
-            .catch(error => {
-                alert("Something went wrong!");
-                thinking.textContent = "";
-                console.error("Error:", error);
-            });
-        }
-
-        function toggleNightMode() {
-            document.body.classList.toggle("night");
-        }
-    </script>
+    function toggleNightMode() {
+      const body = document.body;
+      body.style.backgroundColor = body.style.backgroundColor === "black" ? "" : "black";
+      body.style.color = body.style.color === "white" ? "" : "white";
+    }
+  </script>
 </body>
 </html>
