@@ -1,51 +1,50 @@
-from flask import Flask, request, jsonify, render_template
-from flask_cors import CORS
-import requests
+# Version: v4.2.3 | Date: 06/27/2025 | Voice selector integrated
+from flask import Flask, request, send_file, render_template
+from io import BytesIO
 import os
+import requests
 
 app = Flask(__name__)
-CORS(app)
 
-ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+# Set your ElevenLabs API key here
+ELEVEN_API_KEY = os.getenv("ELEVEN_API_KEY")
+VOICE_MAP = {
+    "bernard": "voice_id_1",   # Replace with real IDs
+    "twinkle": "voice_id_2",
+    "jingles": "voice_id_3"
+}
 
 @app.route("/")
-def home():
+def index():
     return render_template("index.html")
 
 @app.route("/generate", methods=["POST"])
-def generate_voice():
-    try:
-        data = request.get_json()
-        text = data.get("text", "")
-        voice_id = data.get("voice_id", os.getenv("VOICE_ID"))
+def generate():
+    data = request.get_json()
+    text = data.get("text", "")
+    voice_key = data.get("voice", "bernard")
+    voice_id = VOICE_MAP.get(voice_key, VOICE_MAP["bernard"])
 
-        if not text or not voice_id:
-            return jsonify({"error": "Missing text or voice_id"}), 400
-
-        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream"
-        headers = {
-            "xi-api-key": ELEVENLABS_API_KEY,
-            "Content-Type": "application/json"
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+    headers = {
+        "xi-api-key": ELEVEN_API_KEY,
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "text": text,
+        "model_id": "eleven_monolingual_v1",
+        "voice_settings": {
+            "stability": 0.5,
+            "similarity_boost": 0.7
         }
-        payload = {
-            "text": text,
-            "voice_settings": {
-                "stability": 0.5,
-                "similarity_boost": 0.75
-            }
-        }
+    }
 
-        response = requests.post(url, headers=headers, json=payload)
-        if response.status_code != 200:
-            return jsonify({"error": "ElevenLabs API error"}), 500
+    response = requests.post(url, json=payload, headers=headers)
+    if response.status_code != 200:
+        return f"Error: {response.text}", 500
 
-        with open("static/response.mp3", "wb") as f:
-            f.write(response.content)
-
-        return jsonify({"audio_url": "/static/response.mp3"}), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    audio_data = BytesIO(response.content)
+    return send_file(audio_data, mimetype="audio/mpeg")
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=10000)
+    app.run(debug=True)
