@@ -1,50 +1,58 @@
-# Version: v4.2.4 | Date: 06/27/2025 | Background set to festive-bg-v2.png from static/
-from flask import Flask, request, send_file, render_template
-from io import BytesIO
+# Version: v4.2.4 | Date: 06/27/2025 | Description: Fixed API key name to match Render environment variable; added voice selector functionality.
+
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 import os
 import requests
 
 app = Flask(__name__, static_folder='static')
+CORS(app)
 
-# ElevenLabs API Key (set in your Render environment variables)
-ELEVEN_API_KEY = os.getenv("ELEVEN_API_KEY")
+# ✅ Use correct environment variable name set in Render
+ELEVEN_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 
-# Voice IDs from ElevenLabs
-VOICE_MAP = {
-    "bernard": "VCgLBmBjldJmfphyB8sZ",
-    "snowflake": "uHiItyLY8A5jJv9AKoH9",
-    "pepper": "W4crgEyhEtLRIj1Y3LnP"
-}
+# Default fallback voice
+DEFAULT_VOICE_ID = "VCgLBmBjldJmfphyB8sZ"  # Bernard
 
-@app.route("/")
+@app.route('/')
 def index():
-    return render_template("index.html")
+    return send_from_directory('static', 'index.html')
 
-@app.route("/generate", methods=["POST"])
-def generate():
-    data = request.get_json()
+@app.route('/speak', methods=['POST'])
+def speak():
+    data = request.json
     text = data.get("text", "")
-    voice_key = data.get("voice", "bernard")
-    voice_id = VOICE_MAP.get(voice_key, VOICE_MAP["bernard"])
-    return synthesize_speech(text, voice_id)
+    voice_id = data.get("voice_id", DEFAULT_VOICE_ID)
 
-def synthesize_speech(text, voice_id):
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+    if not text:
+        return jsonify({"error": "No text provided."}), 400
+
     headers = {
         "xi-api-key": ELEVEN_API_KEY,
         "Content-Type": "application/json"
     }
+
     payload = {
         "text": text,
         "model_id": "eleven_monolingual_v1",
         "voice_settings": {
-            "stability": 0.5,
-            "similarity_boost": 0.7
+            "stability": 0.3,
+            "similarity_boost": 0.75
         }
     }
 
-    response = requests.post(url, json=payload, headers=headers)
-    if response.status_code != 200:
-        return f"Error: {response.text}", 500
+    try:
+        response = requests.post(
+            f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
+            json=payload,
+            headers=headers
+        )
+        if response.status_code == 200:
+            return response.content, 200, {'Content-Type': 'audio/mpeg'}
+        else:
+            return jsonify({"error": response.text}), response.status_code
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    return send_file(BytesIO(response.content), mimetype="audio/mpeg")
+if __name__ == '__main__':
+    app.run(debug=True)
