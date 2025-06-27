@@ -1,82 +1,124 @@
-<!-- Version: v4.2.4 | Date: 06/27/2025 | Background updated to PNG -->
+<!-- Version: v4.2.4 | Date: 06/27/2025 | Added voice selector for Bernard, Snowflake, Pepper -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Santa's Workshop Hotline</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: url('/static/festive-bg-v2.png') no-repeat center center fixed;
-      background-size: cover;
-      color: black;
-      transition: background-color 0.5s, color 0.5s;
-    }
-    .container {
-      max-width: 600px;
-      margin: 3rem auto;
-      background-color: rgba(255, 255, 255, 0.92);
-      padding: 2rem;
-      border-radius: 12px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.2);
-    }
-    h1 {
-      text-align: center;
-      color: red;
-      transition: color 0.5s;
-    }
-    label, select, textarea, button {
-      display: block;
-      width: 100%;
-      margin-bottom: 1rem;
-    }
-    button {
-      padding: 0.75rem;
-      background-color: #cc0000;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #a00000;
-    }
-    #spinner {
-      text-align: center;
-      display: none;
-    }
-    .dark-mode {
-      background-color: #1c1c1c;
-      color: white;
-    }
-    .dark-mode h1 {
-      color: white;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>Santa's Workshop Hotline</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        body {
+            background: url('/static/festive-bg-v2.png') no-repeat center center fixed;
+            background-size: cover;
+            font-family: Arial, sans-serif;
+            color: #000;
+        }
+        .container {
+            max-width: 600px;
+            margin: 5% auto;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px #00000044;
+        }
+        h1 {
+            text-align: center;
+            color: red;
+            font-size: 28px;
+        }
+        label {
+            display: block;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            border: none;
+            border-radius: 6px;
+            background-color: #d40000;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #spinner {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .night-mode {
+            background: #121212;
+            color: white;
+        }
+        .night-mode .container {
+            background: #2c2c2c;
+            color: white;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1 id="title">Santa's Workshop Hotline</h1>
+    <div class="container">
+        <h1>Santa's Workshop Hotline</h1>
+        <label for="voice">Choose a voice:</label>
+        <select id="voice">
+            <option>Bernard</option>
+            <option>Snowflake</option>
+            <option>Pepper</option>
+        </select>
 
-    <label for="voice">Choose a voice:</label>
-    <select id="voice">
-      <option value="bernard">Bernard (Default)</option>
-      <option value="snowflake">Snowflake</option>
-      <option value="pepper">Pepper</option>
-    </select>
+        <label for="message">Message to Bernard:</label>
+        <textarea id="message" rows="4" placeholder="Type your message here..."></textarea>
 
-    <label for="text">Message to Bernard:</label>
-    <textarea id="text" rows="4" placeholder="Type your message here..."></textarea>
-    <button onclick="sendMessage()">Send to Bernard</button>
+        <button onclick="sendToBernard()">Send to Bernard</button>
+        <button onclick="toggleNightMode()">Toggle Night Mode</button>
 
-    <div id="spinner">🎄 Working on it…</div>
-    <audio id="audio" controls style="width:100%; margin-top:1rem; display:none;"></audio>
+        <div id="spinner">🎄 Bernard is thinking...</div>
+    </div>
 
-    <button onclick="toggleNightMode()">Toggle Night Mode</button>
-  </div>
+    <script>
+        function sendToBernard() {
+            const message = document.getElementById("message").value;
+            const voice = document.getElementById("voice").value;
+            const spinner = document.getElementById("spinner");
 
-  <script>
-    function toggleNightMode()
+            if (!message.trim()) return;
+
+            spinner.style.display = "block";
+
+            fetch("/speak", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: message, voice: voice })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error("Failed to get audio.");
+                return response.blob();
+            })
+            .then(blob => {
+                const audioURL = URL.createObjectURL(blob);
+                const audio = new Audio(audioURL);
+                audio.play();
+                document.getElementById("message").value = "";
+            })
+            .catch(error => {
+                alert("Error: " + error.message);
+            })
+            .finally(() => {
+                spinner.style.display = "none";
+            });
+        }
+
+        function toggleNightMode() {
+            document.body.classList.toggle("night-mode");
+        }
+    </script>
+</body>
+</html>
