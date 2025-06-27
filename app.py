@@ -11,7 +11,7 @@ CORS(app)
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 DEFAULT_VOICE_ID = os.getenv("VOICE_ID")
 
-# Optional: Add more predefined voice IDs here
+# Voice map for UI selection
 VOICE_MAP = {
     "Bernard": DEFAULT_VOICE_ID,
     "Snowflake": "uHiItyLY8A5jJv9AKoH9",
@@ -35,3 +35,4 @@ def speak():
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
     headers = {
         "xi-api-key": ELEVENLABS_API_KEY,
+        "Content-Type": "application/json"
