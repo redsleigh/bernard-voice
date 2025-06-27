@@ -1,75 +1,56 @@
-import os
-import time
-import requests
-from flask import Flask, request, jsonify, render_template
-from dotenv import load_dotenv
+# Version: v4.3 | Date: 06/27/2025 | Updated for 3-voice environment setup on Render
 
-# Load environment variables
-load_dotenv()
+import os
+import requests
+from flask import Flask, render_template, request, send_file, jsonify
+from dotenv import load_dotenv
+from io import BytesIO
 
 app = Flask(__name__)
+load_dotenv()
 
-# Voice ID mapping (replace with your actual voice IDs)
+# Load API key and voice IDs from environment
+api_key = os.getenv("ELEVENLABS_API_KEY")
 voice_ids = {
-    "Bernard": "YOUR_BERNARD_VOICE_ID",
-    "Pepper": "YOUR_PEPPER_VOICE_ID",
-    "Obie": "YOUR_OBIE_VOICE_ID"
+    "Bernard": os.getenv("VOICE_ID_BERNARD"),
+    "Snowflake": os.getenv("VOICE_ID_SNOWFLAKE"),
+    "Pepper": os.getenv("VOICE_ID_PEPPER")
 }
 
-@app.route('/')
+@app.route("/")
 def index():
-    return render_template('index.html', voices=list(voice_ids.keys()))
+    return render_template("index.html", voices=list(voice_ids.keys()))
 
-@app.route('/api/speak', methods=['POST'])
+@app.route("/api/speak", methods=["POST"])
 def speak():
-    try:
-        data = request.get_json()
-        voice = data.get("voice")
-        text = data.get("text")
+    data = request.json
+    text = data.get("text", "")
+    voice = data.get("voice", "")
 
-        if not voice or not text:
-            return jsonify({"error": "Missing voice or text"}), 400
+    if not text or not voice or voice not in voice_ids:
+        return jsonify({"error": "Missing or invalid input"}), 400
 
-        voice_id = voice_ids.get(voice)
-        if not voice_id:
-            return jsonify({"error": f"Voice '{voice}' not found"}), 404
+    voice_id = voice_ids[voice]
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+    headers = {
+        "xi-api-key": api_key,
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "text": text,
+        "voice_settings": {
+            "stability": 0.7,
+            "similarity_boost": 0.75
+        }
+    }
 
-        print(f"[INFO] Generating speech for voice '{voice}' with text: {text}")
+    response = requests.post(url, headers=headers, json=payload)
 
-        # Call ElevenLabs API
-        response = requests.post(
-            f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
-            headers={
-                "xi-api-key": os.getenv("ELEVEN_API_KEY"),
-                "Content-Type": "application/json"
-            },
-            json={
-                "text": text,
-                "voice_settings": {
-                    "stability": 0.4,
-                    "similarity_boost": 0.8
-                }
-            }
-        )
+    if response.status_code != 200:
+        print("Error from ElevenLabs:", response.text)
+        return jsonify({"error": "Something went wrong!"}), 500
 
-        if response.status_code != 200:
-            print("[ERROR] ElevenLabs response:", response.text)
-            return jsonify({"error": "TTS failed"}), 500
+    return send_file(BytesIO(response.content), mimetype="audio/mpeg")
 
-        # Save with timestamp to prevent caching
-        timestamp = int(time.time())
-        filename = f"bernard_output_{timestamp}.mp3"
-        filepath = os.path.join("static", filename)
-
-        with open(filepath, "wb") as f:
-            f.write(response.content)
-
-        print(f"[SUCCESS] Audio saved as {filename}")
-        return jsonify({"audio_url": f"/static/{filename}"})
-
-    except Exception as e:
-        print("[EXCEPTION]", str(e))
-        return jsonify({"error": "Server error"}), 500
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
