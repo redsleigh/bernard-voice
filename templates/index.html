@@ -1,10 +1,13 @@
-<!-- Version: v4.3.2 | Date: 06/28/2025 | Added character limit + white title -->
+<!-- Version: v4.2.3 | Date: 06/28/2025 | Fix title color on toggle, add 250-char limit -->
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Santa’s Workshop Hotline</title>
+  <!-- Version: v4.3.2 | Date: 06/28/2025 | Title color fix, character limit -->
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -58,22 +61,17 @@
     }
 
     h1 {
-      color: #ffffff;
+      color: #b22222;
       margin-bottom: 10px;
+    }
+
+    .dark-mode h1 {
+      color: #ffffff;
     }
 
     #response {
       margin-top: 15px;
       font-style: italic;
-    }
-
-    #charCount {
-      font-size: 0.9em;
-      color: #333;
-    }
-
-    .over-limit {
-      color: red;
     }
 
     @media (max-width: 500px) {
@@ -89,38 +87,18 @@
     <h1>🎙️ Santa’s Workshop Hotline</h1>
     <p>Type a message to Bernard, Pepper, or Snowflake:</p>
 
-    <input type="text" id="userInput" placeholder="What’s the status in the Workshop?" oninput="updateCharCount()" />
-    <div id="charCount">Characters remaining: 250</div>
-    <button id="sendBtn" onclick="sendMessage()">Send to Santa's Workshop</button>
+    <input type="text" id="userInput" placeholder="What’s the status in the Workshop?" maxlength="250" />
+    <button onclick="sendMessage()">Send to Santa's Workshop</button>
     <button onclick="toggleDarkMode()">🌙 Toggle Night Mode</button>
 
     <div id="response"></div>
   </div>
 
   <script>
-    const maxChars = 250;
-
-    function updateCharCount() {
-      const input = document.getElementById("userInput");
-      const charCount = document.getElementById("charCount");
-      const sendBtn = document.getElementById("sendBtn");
-
-      const remaining = maxChars - input.value.length;
-      charCount.textContent = "Characters remaining: " + remaining;
-
-      if (remaining < 0) {
-        charCount.classList.add("over-limit");
-        sendBtn.disabled = true;
-      } else {
-        charCount.classList.remove("over-limit");
-        sendBtn.disabled = false;
-      }
-    }
-
     async function sendMessage() {
       const input = document.getElementById("userInput");
       const text = input.value.trim();
-      if (!text || text.length > maxChars) return;
+      if (!text) return;
 
       const responseDiv = document.getElementById("response");
       responseDiv.textContent = "🎧 Bernard is speaking...";
@@ -141,8 +119,7 @@
         const audio = new Audio(result.audio_url);
         audio.play();
 
-        input.value = ""; // clear input
-        updateCharCount(); // reset counter
+        input.value = ""; // clear the input box
       } catch (err) {
         console.error(err);
         responseDiv.textContent = "❌ Something went wrong.";
@@ -152,9 +129,6 @@
     function toggleDarkMode() {
       document.getElementById("app").classList.toggle("dark-mode");
     }
-
-    // Initialize on load
-    updateCharCount();
   </script>
 </body>
 </html>
