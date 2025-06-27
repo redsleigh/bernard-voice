@@ -7,7 +7,6 @@ app = Flask(__name__)
 CORS(app)
 
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
-VOICE_ID = os.getenv("VOICE_ID")
 
 @app.route("/")
 def home():
@@ -18,11 +17,12 @@ def generate_voice():
     try:
         data = request.get_json()
         text = data.get("text", "")
+        voice_id = data.get("voice_id", os.getenv("VOICE_ID"))
 
-        if not text or not VOICE_ID:
+        if not text or not voice_id:
             return jsonify({"error": "Missing text or voice_id"}), 400
 
-        url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}/stream"
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream"
         headers = {
             "xi-api-key": ELEVENLABS_API_KEY,
             "Content-Type": "application/json"
