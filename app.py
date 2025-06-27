@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-import requests
 import os
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -9,52 +9,62 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-# Root route to serve the frontend
-@app.route('/')
-def home():
-    return render_template('index.html')
+# Replace with your actual ElevenLabs API key
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 
-# Route to handle message and return audio URL
-@app.route('/generate', methods=['POST'])
-def generate_audio():
-    data = request.get_json()
-    message = data.get('message')
-    voice = data.get('voice', 'Bernard')
+# Optional: map voices to IDs if you have custom voices
+VOICE_ID_MAP = {
+    "Bernard": "EXAVITQu4vr4xnSDxMaL"  # Replace with your actual Bernard voice ID
+}
+
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
+@app.route("/api/speak", methods=["POST"])
+def speak():
+    data = request.json
+    voice = data.get("voice", "Bernard")
+    message = data.get("message", "")
 
     if not message:
-        return jsonify({'error': 'No message provided'}), 400
+        return jsonify({"error": "Message is required"}), 400
 
-    ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
-    voice_map = {
-        "Bernard": os.getenv("BERNARD_VOICE_ID"),
-        "Joey": os.getenv("JOEY_VOICE_ID")
-    }
+    voice_id = VOICE_ID_MAP.get(voice, VOICE_ID_MAP["Bernard"])
 
-    voice_id = voice_map.get(voice)
-    if not voice_id:
-        return jsonify({'error': 'Invalid voice selection'}), 400
+    # Send request to ElevenLabs API
+    try:
+        response = requests.post(
+            f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
+            headers={
+                "xi-api-key": ELEVENLABS_API_KEY,
+                "Content-Type": "application/json"
+            },
+            json={
+                "text": message,
+                "model_id": "eleven_monolingual_v1",
+                "voice_settings": {
+                    "stability": 0.4,
+                    "similarity_boost": 0.75
+                }
+            }
+        )
 
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
-    headers = {
-        "xi-api-key": ELEVENLABS_API_KEY,
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "text": message,
-        "model_id": "eleven_monolingual_v1",
-        "voice_settings": {
-            "stability": 0.5,
-            "similarity_boost": 0.75
-        }
-    }
+        if response.status_code != 200:
+            return jsonify({"error": "Failed to get audio"}), 500
 
-    response = requests.post(url, json=payload, headers=headers)
-    if response.status_code == 200:
-        with open("static/bernard_output.mp3", "wb") as f:
+        # Save the mp3 file
+        audio_path = "static/bernard_output.mp3"
+        with open(audio_path, "wb") as f:
             f.write(response.content)
-        return jsonify({"audio_url": "/static/bernard_output.mp3"})
-    else:
-        return jsonify({'error': 'Failed to generate audio'}), 500
 
-if __name__ == '__main__':
+        return jsonify({"audio_url": f"/{audio_path}"})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+if __name__ == "__main__":
     app.run(debug=True)
