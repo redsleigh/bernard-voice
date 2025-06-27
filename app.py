@@ -1,15 +1,15 @@
-# Version: v4.2.4 | Date: 06/27/2025 | Voice selector using actual ElevenLabs IDs
+# Version: v4.2.4 | Date: 06/27/2025 | Background set to festive-bg-v2.png from static/
 from flask import Flask, request, send_file, render_template
 from io import BytesIO
 import os
 import requests
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 
-# Your ElevenLabs API key must be set in environment variables on Render or locally
+# ElevenLabs API Key (set in your Render environment variables)
 ELEVEN_API_KEY = os.getenv("ELEVEN_API_KEY")
 
-# Real voice IDs
+# Voice IDs from ElevenLabs
 VOICE_MAP = {
     "bernard": "VCgLBmBjldJmfphyB8sZ",
     "snowflake": "uHiItyLY8A5jJv9AKoH9",
@@ -48,5 +48,3 @@ def synthesize_speech(text, voice_id):
         return f"Error: {response.text}", 500
 
     return send_file(BytesIO(response.content), mimetype="audio/mpeg")
-
-# Do not run app.run() when using Gunicorn
