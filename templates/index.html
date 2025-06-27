@@ -1,119 +1,110 @@
-<!-- Version: v4.2.4 | Date: 06/27/2025 | Updated for audio_url response format -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Santa’s Workshop Hotline</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-image: url("festive-bg-v2.png");
-      background-size: cover;
-      background-repeat: no-repeat;
-      background-position: center;
-      color: #222;
-      margin: 0;
-      padding: 20px;
-    }
+    <meta charset="UTF-8">
+    <title>Santa’s Workshop Hotline</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('/static/festive-bg-v2.png');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            text-align: center;
+            color: black;
+            padding-top: 100px;
+        }
 
-    .night-mode {
-      background-color: #111;
-      color: white;
-      background-image: none;
-    }
+        .container {
+            background-color: rgba(255, 255, 255, 0.85);
+            display: inline-block;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
 
-    h1 {
-      text-align: center;
-      color: red;
-    }
+        select, input[type="text"], button {
+            padding: 10px;
+            margin: 10px;
+            font-size: 16px;
+            width: 300px;
+        }
 
-    .night-mode h1 {
-      color: white;
-    }
+        audio {
+            margin-top: 20px;
+        }
 
-    .container {
-      max-width: 600px;
-      margin: auto;
-      background: rgba(255, 255, 255, 0.85);
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
-    }
+        #thinking {
+            margin-top: 15px;
+            font-style: italic;
+        }
 
-    input, select, button {
-      font-size: 16px;
-      padding: 10px;
-      margin-top: 10px;
-      width: 100%;
-    }
-
-    .spinner {
-      display: none;
-      margin: 10px auto;
-      text-align: center;
-    }
-  </style>
+        .night {
+            background-color: #111;
+            color: #f1f1f1;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Santa’s Workshop Hotline</h1>
+    <div class="container">
+        <h1>Santa’s Workshop Hotline</h1>
 
-    <label for="voice">Choose a voice:</label>
-    <select id="voice">
-      <option value="VCgLBmBjldJmfphyB8sZ">Bernard</option>
-      <option value="uHiItyLY8A5jJv9AKoH9">Snowflake</option>
-      <option value="W4crgEyhEtLRIj1Y3LnP">Pepper</option>
-    </select>
+        <label for="voice">Choose a voice:</label><br>
+        <select id="voice">
+            <option value="Bernard">Bernard</option>
+            <option value="Pepper">Pepper</option>
+            <option value="Sparkle">Sparkle</option>
+        </select><br>
 
-    <input type="text" id="userInput" placeholder="What do you want to say to Bernard?" />
-    <button onclick="sendToBernard()">Send to Bernard</button>
-    <button onclick="toggleNightMode()">Toggle Night Mode</button>
+        <input type="text" id="text" placeholder="What do you want to say to Bernard?"><br>
 
-    <div class="spinner" id="spinner">🎄 Bernard is thinking...</div>
+        <button onclick="sendToBernard()">Send to Bernard</button>
+        <button onclick="toggleNightMode()">Toggle Night Mode</button>
 
-    <audio id="audio" controls style="margin-top: 15px; width: 100%; display: none;"></audio>
-  </div>
+        <p id="thinking">🎄 Bernard is thinking...</p>
 
-  <script>
-    function toggleNightMode() {
-      document.body.classList.toggle('night-mode');
-    }
+        <audio id="audio" controls style="display:none;"></audio>
+    </div>
 
-    async function sendToBernard() {
-      const message = document.getElementById("userInput").value.trim();
-      const voice = document.getElementById("voice").value;
-      const spinner = document.getElementById("spinner");
-      const audio = document.getElementById("audio");
+    <script>
+        function sendToBernard() {
+            const voice = document.getElementById("voice").value;
+            const text = document.getElementById("text").value;
+            const thinking = document.getElementById("thinking");
+            const audio = document.getElementById("audio");
 
-      if (!message) return;
+            thinking.textContent = "🎄 Bernard is thinking...";
+            audio.style.display = "none";
 
-      spinner.style.display = "block";
-      audio.style.display = "none";
-
-      try {
-        const response = await fetch("/api/speak", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message, voice }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.audio_url) {
-          audio.src = data.audio_url + "?t=" + new Date().getTime(); // prevent caching
-          audio.style.display = "block";
-          audio.play();
-        } else {
-          alert("Error: " + (data.error || "Unknown issue"));
+            fetch("/api/speak", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ voice: voice, text: text })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error("Network error");
+                return response.json();
+            })
+            .then(data => {
+                if (data.audio_url) {
+                    audio.src = data.audio_url;
+                    audio.style.display = "block";
+                    audio.play();
+                    thinking.textContent = "";
+                } else {
+                    throw new Error("No audio URL in response");
+                }
+            })
+            .catch(error => {
+                alert("Something went wrong!");
+                thinking.textContent = "";
+                console.error("Error:", error);
+            });
         }
-      } catch (error) {
-        alert("Something went wrong!");
-        console.error(error);
-      } finally {
-        spinner.style.display = "none";
-        document.getElementById("userInput").value = "";
-      }
-    }
-  </script>
+
+        function toggleNightMode() {
+            document.body.classList.toggle("night");
+        }
+    </script>
 </body>
 </html>
