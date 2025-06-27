@@ -1,124 +1,119 @@
-<!-- Version: v4.2.4 | Date: 06/27/2025 | Added voice selector for Bernard, Snowflake, Pepper -->
+<!-- Version: v4.2.4 | Date: 06/27/2025 | Updated for audio_url response format -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Santa's Workshop Hotline</title>
-    <link rel="stylesheet" href="/static/styles.css">
-    <style>
-        body {
-            background: url('/static/festive-bg-v2.png') no-repeat center center fixed;
-            background-size: cover;
-            font-family: Arial, sans-serif;
-            color: #000;
-        }
-        .container {
-            max-width: 600px;
-            margin: 5% auto;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 0 20px #00000044;
-        }
-        h1 {
-            text-align: center;
-            color: red;
-            font-size: 28px;
-        }
-        label {
-            display: block;
-            margin-top: 20px;
-            font-weight: bold;
-        }
-        select, textarea {
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            font-size: 16px;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            margin-top: 20px;
-            border: none;
-            border-radius: 6px;
-            background-color: #d40000;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        #spinner {
-            display: none;
-            text-align: center;
-            margin-top: 20px;
-        }
-        .night-mode {
-            background: #121212;
-            color: white;
-        }
-        .night-mode .container {
-            background: #2c2c2c;
-            color: white;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Santa’s Workshop Hotline</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-image: url("festive-bg-v2.png");
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      color: #222;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .night-mode {
+      background-color: #111;
+      color: white;
+      background-image: none;
+    }
+
+    h1 {
+      text-align: center;
+      color: red;
+    }
+
+    .night-mode h1 {
+      color: white;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: rgba(255, 255, 255, 0.85);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
+    }
+
+    input, select, button {
+      font-size: 16px;
+      padding: 10px;
+      margin-top: 10px;
+      width: 100%;
+    }
+
+    .spinner {
+      display: none;
+      margin: 10px auto;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Santa's Workshop Hotline</h1>
-        <label for="voice">Choose a voice:</label>
-        <select id="voice">
-            <option>Bernard</option>
-            <option>Snowflake</option>
-            <option>Pepper</option>
-        </select>
+  <div class="container">
+    <h1>Santa’s Workshop Hotline</h1>
 
-        <label for="message">Message to Bernard:</label>
-        <textarea id="message" rows="4" placeholder="Type your message here..."></textarea>
+    <label for="voice">Choose a voice:</label>
+    <select id="voice">
+      <option value="VCgLBmBjldJmfphyB8sZ">Bernard</option>
+      <option value="uHiItyLY8A5jJv9AKoH9">Snowflake</option>
+      <option value="W4crgEyhEtLRIj1Y3LnP">Pepper</option>
+    </select>
 
-        <button onclick="sendToBernard()">Send to Bernard</button>
-        <button onclick="toggleNightMode()">Toggle Night Mode</button>
+    <input type="text" id="userInput" placeholder="What do you want to say to Bernard?" />
+    <button onclick="sendToBernard()">Send to Bernard</button>
+    <button onclick="toggleNightMode()">Toggle Night Mode</button>
 
-        <div id="spinner">🎄 Bernard is thinking...</div>
-    </div>
+    <div class="spinner" id="spinner">🎄 Bernard is thinking...</div>
 
-    <script>
-        function sendToBernard() {
-            const message = document.getElementById("message").value;
-            const voice = document.getElementById("voice").value;
-            const spinner = document.getElementById("spinner");
+    <audio id="audio" controls style="margin-top: 15px; width: 100%; display: none;"></audio>
+  </div>
 
-            if (!message.trim()) return;
+  <script>
+    function toggleNightMode() {
+      document.body.classList.toggle('night-mode');
+    }
 
-            spinner.style.display = "block";
+    async function sendToBernard() {
+      const message = document.getElementById("userInput").value.trim();
+      const voice = document.getElementById("voice").value;
+      const spinner = document.getElementById("spinner");
+      const audio = document.getElementById("audio");
 
-            fetch("/speak", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: message, voice: voice })
-            })
-            .then(response => {
-                if (!response.ok) throw new Error("Failed to get audio.");
-                return response.blob();
-            })
-            .then(blob => {
-                const audioURL = URL.createObjectURL(blob);
-                const audio = new Audio(audioURL);
-                audio.play();
-                document.getElementById("message").value = "";
-            })
-            .catch(error => {
-                alert("Error: " + error.message);
-            })
-            .finally(() => {
-                spinner.style.display = "none";
-            });
+      if (!message) return;
+
+      spinner.style.display = "block";
+      audio.style.display = "none";
+
+      try {
+        const response = await fetch("/api/speak", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message, voice }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.audio_url) {
+          audio.src = data.audio_url + "?t=" + new Date().getTime(); // prevent caching
+          audio.style.display = "block";
+          audio.play();
+        } else {
+          alert("Error: " + (data.error || "Unknown issue"));
         }
-
-        function toggleNightMode() {
-            document.body.classList.toggle("night-mode");
-        }
-    </script>
+      } catch (error) {
+        alert("Something went wrong!");
+        console.error(error);
+      } finally {
+        spinner.style.display = "none";
+        document.getElementById("userInput").value = "";
+      }
+    }
+  </script>
 </body>
 </html>
