@@ -1,74 +1,95 @@
-<!-- Version: v4.3 | Date: 06/27/2025 | Sync with updated app.py and environment setup -->
-
+<!-- Version: v5.0 | Date: 06/27/2025 | Redesigned UI with working voice selection and restored styling -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Santa’s Workshop Hotline</title>
   <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: url('/static/festive-bg-v2.png') center/cover no-repeat;
+      color: #000;
+      text-align: center;
+      padding: 2rem;
+    }
+    h1 {
+      color: red;
+      font-size: 2rem;
+      font-weight: bold;
+      margin-bottom: 1rem;
+    }
+    select, input[type="text"], button {
+      font-size: 1rem;
+      padding: 0.5rem;
+      margin: 0.25rem;
+    }
+    #status {
+      margin-top: 1rem;
+      color: darkgreen;
+      font-style: italic;
+    }
+    #audio-player {
+      margin-top: 1rem;
+      width: 100%;
+      max-width: 500px;
+    }
+    .night-mode {
+      background-color: #111;
+      color: #eee;
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Santa’s Workshop Hotline</h1>
-    <label for="voice">Choose a voice:</label>
-    <select id="voice">
-      {% for voice in voices %}
-        <option value="{{ voice }}">{{ voice }}</option>
-      {% endfor %}
-    </select>
+  <h1>Santa’s Workshop Hotline</h1>
+  <label for="voice">Choose a voice:</label>
+  <select id="voice">
+    <option value="Bernard">Bernard</option>
+    <option value="Snowflake">Snowflake</option>
+    <option value="Pepper">Pepper</option>
+  </select>
+  <input type="text" id="message" placeholder="Type your message here" />
+  <button onclick="sendToBernard()">Send to Bernard</button>
+  <button onclick="toggleNightMode()">Toggle Night Mode</button>
 
-    <input type="text" id="text" placeholder="Type your message here" />
-    <button onclick="sendToBernard()">Send to Bernard</button>
-    <button onclick="toggleNightMode()">Toggle Night Mode</button>
-    <p id="thinking" style="display:none;">🎄 Bernard is thinking...</p>
-    <audio id="audio" controls style="width: 100%; margin-top: 20px;"></audio>
-  </div>
+  <div id="status"></div>
+  <audio id="audio-player" controls></audio>
 
   <script>
+    function toggleNightMode() {
+      document.body.classList.toggle('night-mode');
+    }
+
     async function sendToBernard() {
-      const text = document.getElementById("text").value;
       const voice = document.getElementById("voice").value;
-      const thinking = document.getElementById("thinking");
-      const audio = document.getElementById("audio");
+      const message = document.getElementById("message").value;
+      const status = document.getElementById("status");
+      const player = document.getElementById("audio-player");
 
-      if (!text) {
-        alert("Please enter a message.");
-        return;
-      }
+      status.textContent = "🎄 Bernard is thinking...";
+      player.src = "";
 
-      thinking.style.display = "block";
-      audio.src = "";
-      
       try {
         const response = await fetch("/api/speak", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
           },
-          body: JSON.stringify({ text, voice })
+          body: JSON.stringify({ voice, message })
         });
 
-        if (!response.ok) {
-          const error = await response.json();
-          alert(error.error || "Something went wrong!");
-          thinking.style.display = "none";
-          return;
-        }
+        if (!response.ok) throw new Error("API call failed");
 
         const blob = await response.blob();
-        audio.src = URL.createObjectURL(blob);
-        audio.play();
-      } catch (err) {
+        player.src = URL.createObjectURL(blob);
+        player.play();
+        status.textContent = "✅ Message from " + voice + " is ready!";
+      } catch (error) {
+        console.error("Error:", error);
         alert("Something went wrong!");
-        console.error(err);
-      } finally {
-        thinking.style.display = "none";
+        status.textContent = "⚠️ Something went wrong.";
       }
-    }
-
-    function toggleNightMode() {
-      document.body.classList.toggle("night");
     }
   </script>
 </body>
